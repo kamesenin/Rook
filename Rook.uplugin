@@ -1,0 +1,23 @@
+{
+    "FileVersion" : 1,
+	
+	"FriendlyName" : "Rook",
+	"Version" : 0.1,
+	"VersionName" : "0.0.1",
+	"CreatedBy" : "Tomasz",
+	"CreatedByURL" : "",
+	"EngineVersion" : "4.2.0",
+	"Description" : "Rook - Audio plugin for Unreal 4",
+	"Category" : "Audio",
+	"EnabledByDefault" : true,
+	
+    "Modules" :
+	[
+		{
+			"Name" : "Rook",
+			"Type" : "Runtime",
+			"LoadingPhase" : "PreDefault"
+		}
+	],
+	"CanContainContent" : true
+}
