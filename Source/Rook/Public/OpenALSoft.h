@@ -304,13 +304,11 @@ private:
 	TMap< EEAX, ALuint >			EAXEffects;
 	TMap< EEAX, ALuint >			EAXFilters;
 	uint8							EAXSlotsCapacity = 4;
-	UPROPERTY()
-	class URookAudioDataLoader*		DataLoader = nullptr;
-	
 	void							LoadAudioAsset( class USoundWave* AudioAsset, bool bAddToMap );
-
 	bool							CatchError( FString ActionName = "" );
-	
 	float							VolumeMultiplier = 1.0f;
 	float							DopplerFactor = 5.0f;
+
+	UPROPERTY()
+	TWeakObjectPtr<class URookAudioDataLoader>		DataLoader = nullptr;	
 };

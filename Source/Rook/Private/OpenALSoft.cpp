@@ -2,7 +2,7 @@
 #include "RookUtils.h"
 #include "RookAudioDataLoader.h"
 #include "RookAudioDataLoadingTask.h"
-#include "../Public/OpenALSoft.h"
+#include "OpenALSoft.h"
 
 OpenALSoft::OpenALSoft() {
 	ProcessDLL();
@@ -43,8 +43,10 @@ void OpenALSoft::ProcessDLL() {
 #   endif
 		return;
 #endif
+
+#if WITH_EDITOR
 		bUseEnginePath = FPaths::FileExists( DLLPath );
-		
+#endif
 		if ( bUseEnginePath ) {
 			OALDLLHandler = FPlatformProcess::GetDllHandle( *DLLPath );
 		} else {
@@ -432,7 +434,8 @@ void OpenALSoft::SetAudioSourceData() {
 
 void OpenALSoft::CreateAudioSourcePool() {
 	if ( AudioSourcesPool.Num() == 0 ) {
-		for ( uint16 index = 0; index < MaximumAvailableAudioChannels; ++index ) {
+		AudioSourcesPool.Reserve( MaximumAvailableAudioChannels );
+		for ( uint16 Index = 0; Index < MaximumAvailableAudioChannels; ++Index ) {
 			OALGenSources( ( ALuint )1, &TemporaryAudioSource );
 			AudioSourcesPool.Add( TemporaryAudioSource );
 		}
@@ -441,6 +444,7 @@ void OpenALSoft::CreateAudioSourcePool() {
 
 void OpenALSoft::CreateLowpassPool() {
 	if ( LowpassPool.Num() == 0 ) {
+		LowpassPool.Reserve( MaximumAvailableAudioChannels );
 		for ( uint16 index = 0; index < MaximumAvailableAudioChannels; ++index ) {
 			OALGenFilters( ( ALuint )1, &AudioFilter );
 			LowpassPool.Add(AudioFilter);
@@ -450,6 +454,7 @@ void OpenALSoft::CreateLowpassPool() {
 
 void OpenALSoft::CreateBandpassPool() {
 	if ( BandpassPool.Num() == 0 ) {
+		BandpassPool.Reserve( MaximumAvailableAudioChannels );
 		for ( uint16 index = 0; index < MaximumAvailableAudioChannels; ++index ) {
 			OALGenFilters( ( ALuint )1, &AudioFilter );
 			BandpassPool.Add( AudioFilter );
@@ -692,15 +697,15 @@ void OpenALSoft::SetEFXEAXReverb( EFXEAXREVERBPROPERTIES* EAXReverb, ALuint UIDE
 }
 
 void OpenALSoft::UpdateEAXReverb() {
-	for ( auto Itr = AudioSourceEAX.CreateConstIterator(); Itr; ++Itr ) {
+	for ( TPair< uint32, EEAX >& Kvp : AudioSourceEAX ) {
 		float ReverbGain = 0.0f;
-		if ( AudioSources.Contains( Itr.Key() ) ) {
-			ReverbGain = AudioSources[Itr.Key()];
+		if ( AudioSources.Contains( Kvp.Key ) ) {
+			ReverbGain = AudioSources[Kvp.Key];
 		}
 		
-		SetEFXEAXReverb( &RookUtils::Instance().EAXReverb[Itr.Value()], EAXEffects[Itr.Value()], AudioSourceEAXCustomGain[Itr.Key()], ReverbGain );
-		OALAuxiliaryEffectSloti( EAXEffectSlots[Itr.Value()], AL_EFFECTSLOT_EFFECT, EAXEffects[Itr.Value()] );
-		OALSource3i( AudioSources[Itr.Key()], AL_AUXILIARY_SEND_FILTER, EAXEffectSlots[Itr.Value()], 0, EAXFilters[Itr.Value()] );
+		SetEFXEAXReverb( &RookUtils::Instance().EAXReverb[Kvp.Value], EAXEffects[Kvp.Value], AudioSourceEAXCustomGain[Kvp.Key], ReverbGain );
+		OALAuxiliaryEffectSloti( EAXEffectSlots[Kvp.Value], AL_EFFECTSLOT_EFFECT, EAXEffects[Kvp.Value] );
+		OALSource3i( AudioSources[Kvp.Key], AL_AUXILIARY_SEND_FILTER, EAXEffectSlots[Kvp.Value], 0, EAXFilters[Kvp.Value] );
 	}
 }
 
@@ -740,8 +745,8 @@ uint16 OpenALSoft::GetNumberOfAudioSourcesInPool() const {
 void OpenALSoft::LoadAudioAsset( USoundWave* AudioAsset, bool bAddToMap ) {
 	if ( DataLoader == nullptr ) {
 		URookAudioDataLoader* TemporaryDataLoader = nullptr;
-		for ( TObjectIterator<URookAudioDataLoader> itr; itr; ++itr ) {
-			TemporaryDataLoader = Cast<URookAudioDataLoader>( *itr );
+		for ( TObjectIterator<URookAudioDataLoader> Itr; Itr; ++Itr ) {
+			TemporaryDataLoader = Cast<URookAudioDataLoader>( *Itr );
 		}
 
 		if ( TemporaryDataLoader == nullptr ) {
@@ -755,7 +760,7 @@ void OpenALSoft::LoadAudioAsset( USoundWave* AudioAsset, bool bAddToMap ) {
 		Buffers.Add( AudioAsset->GetUniqueID(), 0 );
 	}
 
-	if ( IsValid( DataLoader ) && DataLoader->IsValidLowLevel() && DataLoader->IsA( URookAudioDataLoader::StaticClass() ) ) {
+	if ( DataLoader.IsValid() ) {
 		TWeakObjectPtr<USoundWave> AssetToLoad = AudioAsset;
 		TArray<TWeakObjectPtr<USoundWave>> TempDataToLoad;
 		TempDataToLoad.Add( AssetToLoad );
@@ -828,6 +833,12 @@ void OpenALSoft::SetAudioDeviceAndCurrentContext() {
 }
 
 void OpenALSoft::CloseDeviceAndDestroyCurrentContext() {
+	if ( Buffers.Num() > 0 ) {
+		for ( TPair<uint32, ALuint>& Kvp : Buffers ) {			
+			OALDeleteBuffers( (ALuint)1, &Kvp.Value );
+		}
+	}
+	
 	if ( AudioSourcesPool.Num() > 0 ) {
 		for ( uint16 Index = 0; Index < AudioSourcesPool.Num(); ++Index ) {
 			if ( OALIsSource( AudioSourcesPool[Index] ) ) {
@@ -849,34 +860,40 @@ void OpenALSoft::CloseDeviceAndDestroyCurrentContext() {
 	}
 
 	if ( EAXEffectSlots.Num() > 0 ) {
-		for ( auto Itr = EAXEffectSlots.CreateConstIterator(); Itr; ++Itr ) {
-			if ( OALIsAuxiliaryEffectSlot( Itr.Value() ) ) {
-				OALDeleteAuxiliaryEffectSlot( ( ALuint )1, &Itr.Value() );
+		for ( TPair< EEAX, ALuint >& Kvp : EAXEffectSlots ) {	
+			if ( OALIsAuxiliaryEffectSlot( Kvp.Value ) ) {
+				OALDeleteAuxiliaryEffectSlot( ( ALuint )1, &Kvp.Value );
 			}			
 		}
 	}
 
 	if ( EAXEffects.Num() > 0 ) {
-		for ( auto Itr = EAXEffects.CreateConstIterator(); Itr; ++Itr ) {
-			if ( OALIsEffect( Itr.Value() ) ) {
-				OALDeleteEffects( ( ALuint )1, &Itr.Value() );
+		for ( TPair< EEAX, ALuint >& Kvp : EAXEffects ) {
+			if ( OALIsEffect( Kvp.Value ) ) {
+				OALDeleteEffects( ( ALuint )1, &Kvp.Value );
 			}			
 		}
 	}
 
 	if ( EAXFilters.Num() > 0 ) {
-		for ( auto Itr = EAXFilters.CreateConstIterator(); Itr; ++Itr ) {
-			OALDeleteFilters( ( ALuint )1, &Itr.Value() );
+		for ( TPair< EEAX, ALuint >& Kvp : EAXFilters ) {
+			OALDeleteFilters( ( ALuint )1, &Kvp.Value );
 		}
 	}
 
 	MainReverb = nullptr;
 	Buffers.Empty();
-	AudioSourcesPool.Empty();
+	AudioSources.Empty();
+	AudioSourceGain.Empty();
+	SourceError.Empty();
+	SourceFilterGain.Empty();
+	AudioSourcesPool.Empty(); 
 	LowpassPool.Empty();
+	LowpassFilters.Empty();
 	BandpassPool.Empty();
+	BandpassFilters.Empty();
 	EAXEffectSlots.Empty();
-	EAXEffects.Empty();
+	EAXEffects.Empty(); 
 	EAXFilters.Empty();
 	AudioSourceEAX.Empty();
 	AudioSourceEAXCustomGain.Empty();

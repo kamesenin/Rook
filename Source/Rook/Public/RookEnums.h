@@ -59,3 +59,18 @@ enum class EPlayback : uint8 {
 		SingleSequence,
 		MAX UMETA(Hidden)
 };
+
+UENUM(Category = "Rook Enums")
+enum class EFreezRotationState : uint8 {
+		NoFreez,
+		Freez,
+		MAX UMETA(Hidden)
+};
+
+UENUM(Category = "Rook Enums")
+enum class EListenerType : uint8 {
+	FollowCamera,
+	FollowActor,
+	FollowMeshSocket,
+	MAX UMETA(Hidden)
+};
