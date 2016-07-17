@@ -33,15 +33,15 @@ UENUM( Category = "Rook Enums" )
 enum class EAudioBus : uint8 {
 		None,
 		Ambience,
-		EFX2D,
 		EFX,
-		Foley2D,
+		EFX3D,
+		Foley,
 		Foley3D,
 		HUD,
 		Music,		
-		SFX2D,
+		SFX,
 		SFX3D,
-		Voice2D,
+		Voice,
 		Voice3D,
 		MAX UMETA(Hidden)
 };
@@ -53,11 +53,19 @@ enum class EPlayback : uint8 {
 		Loop,
 		Random,
 		SingleRandom,
-		SingleLoopRandom,
-		SilentRandom,
 		Sequence,
 		SingleSequence,
 		MAX UMETA(Hidden)
+};
+
+UENUM(Category = "Rook Enums")
+enum class EAudioState : uint8 {
+	None,
+	Playing,
+	Stopped,
+	Paused,
+	WasPlaying,	
+	MAX UMETA(Hidden)
 };
 
 UENUM(Category = "Rook Enums")
@@ -65,6 +73,13 @@ enum class EFreezRotationState : uint8 {
 		NoFreez,
 		Freez,
 		MAX UMETA(Hidden)
+};
+
+UENUM(Category = "Rook Enums")
+enum class EEnableState : uint8 {
+	Enable,
+	Disable,
+	MAX UMETA(Hidden)
 };
 
 UENUM(Category = "Rook Enums")

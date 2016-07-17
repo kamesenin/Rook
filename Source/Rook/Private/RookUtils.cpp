@@ -1,8 +1,9 @@
 #include "RookPrivatePCH.h"
-#include "../Public/RookUtils.h"
+#include "RookUtils.h"
 
 RookUtils::RookUtils(void) {
 	SetUpEAXReverbMap();
+	SetUpAcusticsMap();
 }
 
 RookUtils& RookUtils::Instance() {
@@ -120,4 +121,60 @@ void RookUtils::SetUpEAXReverbMap() {
 	EAXReverb.Add( EEAX::CityLibrary, EFX_REVERB_PRESET_CITY_LIBRARY );
 	EAXReverb.Add( EEAX::CityUnderpass, EFX_REVERB_PRESET_CITY_UNDERPASS );
 	EAXReverb.Add( EEAX::CityAbandoned, EFX_REVERB_PRESET_CITY_ABANDONED );
+}
+
+void RookUtils::SetUpAcusticsMap() {
+	STC.Add( "PHM_Gypsum", 25 );
+	STC.Add( "PHM_Glass", 27 );
+	STC.Add( "PHM_Wood", 30 );
+	STC.Add( "PHM_Masonry", 40 );
+	STC.Add( "PHM_Clay", 45 );
+	STC.Add( "PHM_Brick", 51 );
+	STC.Add( "PHM_Concrete", 55 );
+	STC.Add( "PHM_Steel", 57 );
+
+	SAC.Add( "PHM_Gypsum", 0.05f );
+	SAC.Add( "PHM_Glass", 0.02f );
+	SAC.Add( "PHM_Wood", 0.1f );
+	SAC.Add( "PHM_Masonry", 0.05f );
+	SAC.Add( "PHM_Brick", 0.07f );
+	SAC.Add( "PHM_Concrete", 0.1f );
+}
+
+float RookUtils::CalculateSTC( float MeshDepth, float MeshSize ) {
+	return 13.4f + 11.4* ( log10( MeshSize ) ) + 0.0826*MeshDepth;
+}
+
+float RookUtils::AvarageSAC( float MeshDepth ) {
+	return 0.073f + 0.0001*MeshDepth;
+}
+
+bool RookUtils::InSpehereRadius( FVector SourceLocation, FVector TargetLocation, float Radius ) const {
+	return ( FMath::Pow( ( SourceLocation.X - TargetLocation.X ), 2.0f ) + FMath::Pow( ( SourceLocation.Y - TargetLocation.Y ), 2.0f ) + FMath::Pow( ( SourceLocation.Z - TargetLocation.Z ), 2.0f ) ) <= Radius * Radius;
+}
+
+UWorld* RookUtils::GetWorld( TEnumAsByte<EWorldType::Type> WorldType ) const {
+	if ( !GEngine )
+		return nullptr;
+
+	const TIndirectArray<FWorldContext>& Contextes = GEngine->GetWorldContexts();
+
+	for ( FWorldContext TemporaryContext : Contextes ) {
+		if ( TemporaryContext.WorldType == WorldType ) {
+			return TemporaryContext.World();
+		}		
+	}
+
+	//If previouse world type was not catched we are returning Play in Editor or Editor UWorld
+	for ( FWorldContext TemporaryContext : Contextes ) {
+		if ( TemporaryContext.WorldType == EWorldType::PIE || TemporaryContext.WorldType == EWorldType::Editor ) {
+			return TemporaryContext.World();
+		}
+	}
+	return nullptr;
+}
+
+uint32 RookUtils::GetUniqueID() {
+	CurrentUniqeID++;
+	return CurrentUniqeID;
 }

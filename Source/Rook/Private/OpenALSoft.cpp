@@ -134,7 +134,7 @@ void OpenALSoft::FreeOpenALDll() {
 	FPlatformProcess::FreeDllHandle( OALDLLHandler );
 }
 
-bool OpenALSoft::Play( FAudioSourceData SourceData ) {
+bool OpenALSoft::Play( FAudioSourceModel SourceData ) {
 	if ( AudioSourcesPool.Num() > 0 ) {		
 		if ( bHasReachPlayLimit ) {
 			bHasReachPlayLimit = false;
@@ -151,18 +151,16 @@ bool OpenALSoft::Play( FAudioSourceData SourceData ) {
 	uint32 TemporaryAudioAssetUID = 0;
 	ALuint TemporaryBuffer = AL_NONE;
 
-	if ( SourceData.AudioSourceAsset != nullptr ) {
-		if ( SourceData.AudioSourceAsset->IsValidLowLevel() ) {
-			TemporaryAudioAssetUID = SourceData.AudioSourceAsset->GetUniqueID();
-			bHasBufferData = Buffers.Contains( TemporaryAudioAssetUID );
+	if ( SourceData.MonoAudioSourceAsset.IsValid() ) {
+		TemporaryAudioAssetUID = SourceData.MonoAudioSourceAsset->GetUniqueID();
+		bHasBufferData = Buffers.Contains( TemporaryAudioAssetUID );
 
-			if ( bHasBufferData ) {
-				bShouldPlay = Buffers[ TemporaryAudioAssetUID ] != 0 && Buffers[ TemporaryAudioAssetUID ] != 1;
-			}
-			if ( bShouldPlay ) {
-				TemporaryBuffer = Buffers[ TemporaryAudioAssetUID ];
-			}
+		if ( bHasBufferData ) {
+			bShouldPlay = Buffers[ TemporaryAudioAssetUID ] != 0;
 		}
+		if ( bShouldPlay ) {
+			TemporaryBuffer = Buffers[ TemporaryAudioAssetUID ];
+		}		
 	}
 	
 	if ( bHasBufferData )	{
@@ -192,13 +190,13 @@ bool OpenALSoft::Play( FAudioSourceData SourceData ) {
 					AudioSources.Add( SourceData.AudioSourceID, TemporaryAudioSource );
 				}
 
-				if ( SourceData.bIsAudioSourceLooping) {
+				if ( SourceData.PlaybackOption == EPlayback::Loop ) {
 					OALSourcei( TemporaryAudioSource, AL_LOOPING, AL_TRUE );
 				} else {
 					OALSourcei( TemporaryAudioSource, AL_LOOPING, AL_FALSE );
 				}
 
-				if ( SourceData.bIsAudioSourceUsingRandomPitch ) {
+				if ( SourceData.bUseRandomPitch ) {
 					OALSourcef( TemporaryAudioSource, AL_PITCH, SourceData.AudioSourceRandomPitch );
 				}
 
@@ -213,6 +211,7 @@ bool OpenALSoft::Play( FAudioSourceData SourceData ) {
 				OALSourcePlay( TemporaryAudioSource );
 				CurrentLiveSourceCount = AudioSources.Num();
 				bHasAudioSourcePlayed = true;
+				SourceData.AudioState = EAudioState::Playing;
 				CatchError("playing source");
 			} else {
 				if ( SourceError.Contains( SourceData.AudioSourceID ) )	{
@@ -227,10 +226,10 @@ bool OpenALSoft::Play( FAudioSourceData SourceData ) {
 				CatchError("setting up source");
 			}
 		} else {
-			LoadAudioAsset( SourceData.AudioSourceAsset, false );
+			LoadAudioAsset( SourceData.MonoAudioSourceAsset, false );
 		}
 	} else {
-		LoadAudioAsset( SourceData.AudioSourceAsset, true );
+		LoadAudioAsset( SourceData.MonoAudioSourceAsset, true );
 	}
 
 	if ( CatchError() )	{
@@ -240,12 +239,16 @@ bool OpenALSoft::Play( FAudioSourceData SourceData ) {
 }
 
 void OpenALSoft::PlayAt( uint32 AudioSourceUID, float Seconds ) {
-	if ( bWasDllLoaded && AudioSources.Contains( AudioSourceUID ) ) {
-		if ( bCanPlayAudio ) {
-			OALSourceStop( AudioSources[AudioSourceUID] );
-			OALSourcef( AudioSources[AudioSourceUID], AL_SEC_OFFSET, Seconds );
-			OALSourcePlay( AudioSources[AudioSourceUID] );
-		}
+	if ( bWasDllLoaded && AudioSources.Contains( AudioSourceUID ) && bCanPlayAudio ) {
+		OALSourceStop( AudioSources[AudioSourceUID] );
+		OALSourcef( AudioSources[AudioSourceUID], AL_SEC_OFFSET, Seconds );
+		OALSourcePlay( AudioSources[AudioSourceUID] );
+	}
+}
+
+void OpenALSoft::PlayAfterPause( uint32 AudioSourceUID ) {
+	if ( AudioSources.Contains( AudioSourceUID ) && OALIsSource( AudioSources[AudioSourceUID] ) ) {
+		OALSourcePlay( AudioSources[AudioSourceUID] );
 	}
 }
 
@@ -256,10 +259,8 @@ void OpenALSoft::Stop( uint32 AudioSourceUID ) {
 }
 
 void OpenALSoft::Pause( uint32 AudioSourceUID ) {
-	if ( bWasDllLoaded && AudioSources.Contains( AudioSourceUID ) ) {
-		if ( bCanPlayAudio ) {
-			OALSourcePause( AudioSources[AudioSourceUID] );
-		}
+	if ( bWasDllLoaded && AudioSources.Contains( AudioSourceUID ) && bCanPlayAudio ) {
+		OALSourcePause( AudioSources[AudioSourceUID] );
 	}
 }
 
@@ -352,6 +353,22 @@ bool OpenALSoft::IsAudioSourcePlaying( uint32 AudioSourceUID ) {
 		}
 	}
 	return false;
+}
+
+EAudioState OpenALSoft::AudioSourceState(uint32 AudioSourceUID) {
+	if ( AudioSources.Contains( AudioSourceUID ) ) {
+		ALint PlayingState;
+		OALGetSourcei( AudioSources[AudioSourceUID], AL_SOURCE_STATE, &PlayingState );
+
+		if ( PlayingState == AL_PLAYING ) {
+			return EAudioState::Playing;
+		} else if( PlayingState == AL_STOPPED ) {
+			return EAudioState::Stopped;
+		} else if ( PlayingState == AL_PAUSED ) {
+			return EAudioState::Paused;
+		}
+	}
+	return EAudioState::None;
 }
 
 void OpenALSoft::SetLooping( uint32 AudioSourceUID, bool bShouldLoop ) {
@@ -742,7 +759,7 @@ uint16 OpenALSoft::GetNumberOfAudioSourcesInPool() const {
 	return MaximumAvailableAudioChannels - AudioSourcesPool.Num();
 }
 
-void OpenALSoft::LoadAudioAsset( USoundWave* AudioAsset, bool bAddToMap ) {
+void OpenALSoft::LoadAudioAsset( TWeakObjectPtr<class USoundWave> AudioAsset, bool bAddToMap ) {
 	if ( DataLoader == nullptr ) {
 		URookAudioDataLoader* TemporaryDataLoader = nullptr;
 		for ( TObjectIterator<URookAudioDataLoader> Itr; Itr; ++Itr ) {

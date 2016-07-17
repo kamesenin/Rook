@@ -1,51 +1,76 @@
 #include "RookPrivatePCH.h"
-#include "OpenALSoft.h"
 #include "Runtime/Engine/Classes/GameFramework/Actor.h"
 #include "Runtime/Engine/Classes/Camera/PlayerCameraManager.h"
 #include "Runtime/Engine/Classes/Engine/SkeletalMesh.h"
 #include "Runtime/Engine/Classes/Engine/SkeletalMeshSocket.h"
+#include "OpenALSoft.h"
+#include "RookUtils.h"
 #include "RookListenerController.h"
 
 URookListenerController::URookListenerController() {
-	bWantsInitializeComponent = true;
-	PrimaryComponentTick.bStartWithTickEnabled = true;
-	PrimaryComponentTick.bCanEverTick = true;
-	SetActive( false, false );
+	CheckInitListenerType();
 }
 
-void URookListenerController::TickComponent( float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction ) {
-	Super::TickComponent( DeltaTime, TickType, ThisTickFunction );
-	
+bool URookListenerController::IsTickable() const {
+	return IsTicking;
+}
+
+TStatId URookListenerController::GetStatId() const {
+	return this->GetStatID();
+}
+
+void URookListenerController::Tick( float DeltaTime ) {
 	if ( !IsFollowerValid() ) {
 		return;
 	} else {
 		switch ( ListenerType ) {
 			case EListenerType::FollowActor:
-				UpdateListenerPosition( ActorToFollow );
+				UpdateListenerLocation( ActorToFollow );
 				break;
 			case EListenerType::FollowMeshSocket:
 				ValidatedSocketActor();
-				UpdateListenerPosition( SocketActor );
+				UpdateListenerLocation( SocketActor );
 				break;
 			case EListenerType::FollowCamera:
-				UpdateListenerPosition( CameraToFollow );
+				UpdateListenerLocation( CameraToFollow );
 				break;
 		}		
 	}		 
 }
 
-void URookListenerController::SetListenerActiveState( bool bActive ) {
-	SetActive( bActive, false );
-	SetComponentTickEnabled( bActive );	
+void URookListenerController::SetListenerActiveState( bool bIsActive ) {
+	IsTicking = bActive;
+	bActive = bIsActive;
+}
+
+bool URookListenerController::IsActive() const {
+	return bActive;
 }
 
 void URookListenerController::ChangeListenerType( EListenerType NewListenerType ) {
 	ListenerType = NewListenerType;
 }
 
-void URookListenerController::InitializeComponent() {
-	Super::InitializeComponent();
+FVector	URookListenerController::GetListenerLocation() const {
+	if ( !IsFollowerValid() ) {
+		return FVector( 0 );
+	} else {
+		switch ( ListenerType ) {
+		case EListenerType::FollowActor:
+			return ActorToFollow->GetActorLocation();
+			break;
+		case EListenerType::FollowMeshSocket:
+			return SocketActor->GetActorLocation();
+			break;
+		case EListenerType::FollowCamera:
+			return CameraToFollow->GetCameraLocation();
+			break;
+		}
+	}
+	return FVector( 0 );
+}
 
+void URookListenerController::CheckInitListenerType() {
 	if ( ActorToFollow.IsValid() ) {
 		ListenerType = EListenerType::FollowActor;
 	}
@@ -54,18 +79,16 @@ void URookListenerController::InitializeComponent() {
 		ListenerType = EListenerType::FollowMeshSocket;
 	}
 
-	if ( ListenerType == EListenerType::FollowCamera && !CameraToFollow.IsValid()) {
-		for ( TActorIterator<APlayerCameraManager> Itr( GetWorld() ); Itr; ++Itr ) {
-			CameraToFollow = Cast<APlayerCameraManager>( *Itr );
-		}
+	if ( ListenerType == EListenerType::FollowCamera && !CameraToFollow.IsValid() ) {
+		if  ( RookUtils::Instance().GetWorld() ) {
+			for ( TActorIterator<APlayerCameraManager> Itr( RookUtils::Instance().GetWorld() ); Itr; ++Itr ) {
+				CameraToFollow = Cast<APlayerCameraManager>( *Itr );
+			}
+		}		
 	}
 }
 
-void URookListenerController::UninitializeComponent() {
-	Super::UninitializeComponent();
-}
-
-void URookListenerController::UpdateListenerPosition( TWeakObjectPtr<class AActor> Actor ) {
+void URookListenerController::UpdateListenerLocation( TWeakObjectPtr<class AActor> Actor ) {
 	FVector TempListenerForwardVector = Actor->GetActorForwardVector();
 	FVector TempListenerUpVector = Actor->GetActorUpVector();
 	FRotator TempRotator = Actor->GetActorRotation();
@@ -109,8 +132,8 @@ bool URookListenerController::IsFollowerValid() const {
 }
 
 void URookListenerController::ValidatedSocketActor() {	
-	if ( !SocketActor.IsValid() ) {	
-		SocketActor = NewObject<AActor>( GetWorld() );		
+	if ( !SocketActor.IsValid() && RookUtils::Instance().GetWorld() ) {
+		SocketActor = NewObject<AActor>( RookUtils::Instance().GetWorld() );
 		SocketAttachment.MeshSocketToFollow->AttachActor( SocketActor.Get(), SocketAttachment.CharacterWithSocket->GetMesh() );
 	}
 }

@@ -29,8 +29,8 @@ void RookAudioDataLoadingTask::LoadData() {
 		FSoundQualityInfo QualityInfo;
 
 		for ( TWeakObjectPtr<USoundWave> SoundWave : AudioAssets ) {
-			if ( SoundWave->NumChannels == 1 ) {
-				WaveID = SoundWave->GetUniqueID();
+			WaveID = SoundWave->GetUniqueID();
+			if ( SoundWave->NumChannels == 1  && !OpenALSoft::Instance().Buffers.Contains( WaveID ) ) {								
 #if WITH_OGGVORBIS
 				FByteBulkData* Bulk = SoundWave->GetCompressedData( TEXT("OGG") );
 				if ( Bulk ) {
@@ -85,13 +85,8 @@ void RookAudioDataLoadingTask::LoadData() {
 
 				OpenALSoft::Instance().OALGenBuffers( (ALuint)1, &AudioBuffer );
 				OpenALSoft::Instance().OALBufferData( AudioBuffer, AudioFormat, (void*)RawData, DataSize, AudioSampleRate );
-
-				if ( OpenALSoft::Instance().Buffers.Contains( WaveID ) ) {
-					OpenALSoft::Instance().Buffers[WaveID] = AudioBuffer;
-				} else {
-					OpenALSoft::Instance().Buffers.Add( WaveID, AudioBuffer );
-				}
-
+				OpenALSoft::Instance().Buffers.Add( WaveID, AudioBuffer );
+				
 				delete[] RawData;
 				delete AudioInfo;
 			}

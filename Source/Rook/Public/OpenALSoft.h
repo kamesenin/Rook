@@ -81,8 +81,9 @@ public:
 	static OpenALSoft&			Instance();
 	~OpenALSoft(){};
 
-	bool						Play( FAudioSourceData SourceData );
-	void						PlayAt(uint32 AudioSourceUID, float Seconds);
+	bool						Play( FAudioSourceModel SourceData );
+	void						PlayAt( uint32 AudioSourceUID, float Seconds );
+	void						PlayAfterPause( uint32 AudioSourceUID );
 	void						Stop( uint32 AudioSourceUID );
 	void						Pause( uint32 AudioSourceUID );
 	void						ChangeAudioSourceGain( uint32 AudioSourceUID, float Gain, bool bForceGain = false );
@@ -90,6 +91,7 @@ public:
 	bool						RemoveAudioSource( uint32 AudioSourceUID );
 	bool						IsAnAudioSource( uint32 AudioSourceUID );
 	bool						IsAudioSourcePlaying( uint32 AudioSourceUID );
+	EAudioState					AudioSourceState( uint32 AudioSourceUID );
 	void						SetLooping ( uint32 AudioSourceUID, bool bShouldLoop );
 	void						ChangeAudioSourcePitch( uint32 AudioSourceUID, float Pitch );
 	void						UpdateAudioSourcePosition( uint32 AudioSourceUID, FVector AudioSourcePosition );
@@ -304,7 +306,7 @@ private:
 	TMap< EEAX, ALuint >			EAXEffects;
 	TMap< EEAX, ALuint >			EAXFilters;
 	uint8							EAXSlotsCapacity = 4;
-	void							LoadAudioAsset( class USoundWave* AudioAsset, bool bAddToMap );
+	void							LoadAudioAsset( TWeakObjectPtr<class USoundWave> AudioAsset, bool bAddToMap );
 	bool							CatchError( FString ActionName = "" );
 	float							VolumeMultiplier = 1.0f;
 	float							DopplerFactor = 5.0f;
