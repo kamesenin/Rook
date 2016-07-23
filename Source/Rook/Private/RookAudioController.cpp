@@ -3,7 +3,6 @@
 #include "Runtime/Engine/Classes/Curves/CurveFloat.h"
 #include "OpenALSoft.h"
 #include "RookAudioController.h"
-#include "RookMonoSource.h"
 #include "RookListenerController.h"
 #include "RookUtils.h"
 #include "RookAudioDataLoader.h"
@@ -23,7 +22,10 @@ TStatId URookAudioController::GetStatId() const {
 void URookAudioController::Tick( float DeltaTime ) {
 	if ( AudioSources.Num() > 0 ) {
 		for ( TPair< uint32, FAudioSourceModel >& Kvp : AudioSources ) {
-			CheckIfSourceFinishedPlaying( Kvp.Value );
+			if ( Kvp.Value.AudioType == EAudioType::is3D ) {
+				CheckIfSourceFinishedPlaying( Kvp.Value );
+			}
+
 			TWeakObjectPtr<AActor> TemporaryParent;
 			for ( TObjectIterator<AActor> Itr; Itr; ++Itr ) {
 				if ( Itr->GetUniqueID() == Kvp.Value.ParentID ) {
@@ -34,10 +36,11 @@ void URookAudioController::Tick( float DeltaTime ) {
 
 			switch ( Kvp.Value.AudioState ) {
 				case EAudioState::WasPlaying:
-					AfterFinishedPlaying( TemporaryParent, Kvp.Value );
+					if ( TemporaryParent.IsValid() )
+						AfterFinishedPlaying( TemporaryParent, Kvp.Value );
 					break;
 				case EAudioState::Playing:
-					if ( TemporaryParent.IsValid() )
+					if ( TemporaryParent.IsValid() && Kvp.Value.AudioType == EAudioType::is3D )
 						UpdateLocation( TemporaryParent, Kvp.Value );
 				break;
 			}			
@@ -45,12 +48,14 @@ void URookAudioController::Tick( float DeltaTime ) {
 	}	
 }
 
-void URookAudioController::Play( TWeakObjectPtr<class AActor> Parent ) {
+void URookAudioController::Play( const TWeakObjectPtr<class AActor> Parent ) {
 	GetAudioMaxiumDistance();
 	CheckIfBufferHasAudioData();
 	if ( HasActiveListenerController() && HasAudioModelCurrentSurface() && RookUtils::Instance().InSpehereRadius( Parent->GetActorLocation(), ActiveListenerController->GetListenerLocation(), MaxiumDistanceToListener ) ) {
 		if ( !ShouldUnPause( Parent->GetUniqueID() ) ) {
-			SetUpNewMonoAudio( Parent );
+			if ( AudioSourceModel.AudioType == EAudioType::is3D ) {
+				SetUpNewMonoAudio( Parent );
+			}			
 		} else {
 			Pause();
 		}		
@@ -60,47 +65,58 @@ void URookAudioController::Play( TWeakObjectPtr<class AActor> Parent ) {
 void URookAudioController::Pause() {
 	if ( AudioSources.Num() > 0 ) {
 		for ( TPair< uint32, FAudioSourceModel >& Kvp : AudioSources ) {
-			if ( Kvp.Value.AudioState == EAudioState::Playing ) {
-				Kvp.Value.AudioState = EAudioState::Paused;
-				OpenALSoft::Instance().Pause( Kvp.Key );
-			} else if ( Kvp.Value.AudioState == EAudioState::Playing ) {
-				Kvp.Value.AudioState = EAudioState::Playing;
-				OpenALSoft::Instance().PlayAfterPause( Kvp.Key );
-			}			
+			if( Kvp.Value.AudioType == EAudioType::is3D ) {
+				if ( Kvp.Value.AudioState == EAudioState::Playing ) {
+					Kvp.Value.AudioState = EAudioState::Paused;
+					OpenALSoft::Instance().Pause( Kvp.Key );
+				}
+				else if ( Kvp.Value.AudioState == EAudioState::Playing ) {
+					Kvp.Value.AudioState = EAudioState::Playing;
+					OpenALSoft::Instance().PlayAfterPause( Kvp.Key );
+				}
+			}
 		}
-	}
+	}	
 }
 
-bool URookAudioController::ShouldUnPause( uint32 ParentID ) {
+bool URookAudioController::ShouldUnPause( const uint32 ParentID ) {
 	if ( AudioSources.Num() > 0 ) {
 		for ( TPair< uint32, FAudioSourceModel >& Kvp : AudioSources ) {
 			if ( Kvp.Value.ParentID == ParentID && Kvp.Value.AudioState == EAudioState::Paused ) {
 				return true;
 			}
 		}
-	}
+	}	
 	return false;
 }
 
 void URookAudioController::Stop() {
 	if ( AudioSources.Num() > 0 ) {
 		for ( TPair< uint32, FAudioSourceModel >& Kvp : AudioSources ) {
-			OpenALSoft::Instance().RemoveAudioSource( Kvp.Key );
+			if( Kvp.Value.AudioType == EAudioType::is3D ) {
+				OpenALSoft::Instance().RemoveAudioSource( Kvp.Key );
+			}
 			AudioSources.Remove( Kvp.Key );
 			AudioSources.Compact();
 		}
-	}
+	}	
 }
 
-void URookAudioController::ChangeSurface( TEnumAsByte<EPhysicalSurface> NewSurface ) {
-	CurrentAudioControllerSurafce = NewSurface;
+void URookAudioController::ChangeSurface( const TEnumAsByte<EPhysicalSurface> NewSurface ) {
+	if ( NewSurface != CurrentAudioControllerSurafce ) {
+		CurrentAudioControllerSurafce = NewSurface;
+		LastRandomIndex = 0;
+		LastSequenceIndex = 0;
+	}	
 }
 
-void URookAudioController::ChangeEAX( EEAX NewEAX ) {
+void URookAudioController::ChangeEAX( const EEAX NewEAX ) {
 	CurrentAudioControllerEAX = NewEAX;
 	if ( AudioSources.Num() > 0 ) {
 		for ( TPair< uint32, FAudioSourceModel >& Kvp : AudioSources ) {
-			OpenALSoft::Instance().SetEAXOnAudioSource( NewEAX, Kvp.Key );
+			if ( Kvp.Value.AudioType == EAudioType::is3D ) {
+				OpenALSoft::Instance().SetEAXOnAudioSource( NewEAX, Kvp.Key );
+			}
 		}
 	}
 }
@@ -124,7 +140,7 @@ void URookAudioController::GetActiveListenerController() {
 	}
 }
 
-void URookAudioController::SetUpNewMonoAudio( TWeakObjectPtr<AActor> Parent ) {
+void URookAudioController::SetUpNewMonoAudio( const TWeakObjectPtr<AActor> Parent ) {
 	uint32 TemporaryNewAudioSourceID = RookUtils::Instance().GetUniqueID();
 	FVector ParentLocation = Parent->GetActorLocation();
 		
@@ -149,6 +165,7 @@ void URookAudioController::SetUpNewMonoAudio( TWeakObjectPtr<AActor> Parent ) {
 
 	AudioSources.Add( TemporaryNewAudioSourceID, AudioSourceModel );
 	AudioSourceModel.MonoAudioSourceAsset = GetMonoAudioSource( TemporaryNewAudioSourceID );	
+	TemporaryAviableAudioSources.Empty();
 	OpenALSoft::Instance().Play( AudioSourceModel );
 }
 
@@ -177,8 +194,8 @@ void URookAudioController::CheckIfBufferHasAudioData() {
 }
 
 void URookAudioController::CheckDataLoader() {
-	if ( DataLoader == nullptr ) {
-		URookAudioDataLoader* TemporaryDataLoader = nullptr;
+	if ( DataLoader == nullptr || !DataLoader.IsValid() ) {
+		TWeakObjectPtr<URookAudioDataLoader> TemporaryDataLoader = nullptr;
 		for ( TObjectIterator<URookAudioDataLoader> Itr; Itr; ++Itr ) {
 			TemporaryDataLoader = Cast<URookAudioDataLoader>( *Itr );
 		}
@@ -192,50 +209,48 @@ void URookAudioController::CheckDataLoader() {
 	}
 }
 
-TWeakObjectPtr<class USoundWave> URookAudioController::GetMonoAudioSource( uint32 AudioSourceID ) {
+TWeakObjectPtr<class USoundWave> URookAudioController::GetMonoAudioSource( const uint32 AudioSourceID ) {
 	if ( AudioSources.Contains( AudioSourceID ) ) {
 		switch ( AudioSources[AudioSourceID].PlaybackOption ) {
 			case EPlayback::Single:			
 			case EPlayback::Loop:
-				return AudioSources[AudioSourceID].MonoAssets[0].AudioAsset;
+				return TemporaryAviableAudioSources[0];
 				break;
 			case EPlayback::Random:
 			case EPlayback::SingleRandom:
-				return GetRandomMonoAudioSource( AudioSourceID );
+				return GetRandomMonoAudioSource();
 				break;
 			case EPlayback::Sequence:
 			case EPlayback::SingleSequence:
-				return GetSequenceMonoAudioSource( AudioSourceID );
+				return GetSequenceMonoAudioSource();
 				break;
 		}		
 	}
 	return nullptr;
 }
 
-TWeakObjectPtr<class USoundWave> URookAudioController::GetRandomMonoAudioSource( uint32 AudioSourceID ) {
-	if ( AudioSources[AudioSourceID].MonoAssets.Num() > 0 ) {
-		if ( AudioSources[AudioSourceID].MonoAssets.Num() == 1 ) {
-			LastRandomIndex = 0;
-			return AudioSources[AudioSourceID].MonoAssets[0].AudioAsset;
-		} else {
-			uint16 TemporaryRandomIndex = FMath::RandRange( 0, AudioSources[AudioSourceID].MonoAssets.Num() );
-			while ( TemporaryRandomIndex == LastRandomIndex ) {
-				TemporaryRandomIndex = FMath::RandRange( 0, AudioSources[AudioSourceID].MonoAssets.Num() );
-			}
-			LastRandomIndex = TemporaryRandomIndex;
-			return AudioSources[AudioSourceID].MonoAssets[LastRandomIndex].AudioAsset;
-		}		
-	}
+TWeakObjectPtr<class USoundWave> URookAudioController::GetRandomMonoAudioSource() {
+	if ( TemporaryAviableAudioSources.Num() == 1 ) {
+		LastRandomIndex = 0;
+		return TemporaryAviableAudioSources[0];
+	} else {
+		uint16 TemporaryRandomIndex = FMath::RandRange( 0, TemporaryAviableAudioSources.Num() );
+		while ( TemporaryRandomIndex == LastRandomIndex ) {
+			TemporaryRandomIndex = FMath::RandRange( 0, TemporaryAviableAudioSources.Num() );
+		}
+		LastRandomIndex = TemporaryRandomIndex;
+		return TemporaryAviableAudioSources[LastRandomIndex];
+	}	
 	return nullptr;
 }
 
-TWeakObjectPtr<class USoundWave> URookAudioController::GetSequenceMonoAudioSource( uint32 AudioSourceID ) {
-	if ( AudioSources[AudioSourceID].MonoAssets.Num() > 0 ) {
+TWeakObjectPtr<class USoundWave> URookAudioController::GetSequenceMonoAudioSource() {
+	if ( TemporaryAviableAudioSources.Num() > 0 ) {
 		++LastSequenceIndex;
-		if ( LastSequenceIndex > AudioSources[AudioSourceID].MonoAssets.Num() ) {
+		if ( LastSequenceIndex > TemporaryAviableAudioSources.Num() ) {
 			LastSequenceIndex = 0;
 		}
-		return AudioSources[AudioSourceID].MonoAssets[LastSequenceIndex].AudioAsset;
+		return TemporaryAviableAudioSources[LastSequenceIndex];
 	}
 	return nullptr;
 }
@@ -243,9 +258,12 @@ TWeakObjectPtr<class USoundWave> URookAudioController::GetSequenceMonoAudioSourc
 bool URookAudioController::HasAudioModelCurrentSurface() {
 	if ( AudioSourceModel.MonoAssets.Num() > 0 ) {
 		for ( FMonoAudioModel MonoAudioModel : AudioSourceModel.MonoAssets ) {
-			if ( MonoAudioModel.SurfaceAffectingAudio == CurrentAudioControllerSurafce )
-				return true;
+			if ( MonoAudioModel.SurfaceAffectingAudio == CurrentAudioControllerSurafce && MonoAudioModel.AudioAsset.IsValid() ) {
+				TemporaryAviableAudioSources.Add( MonoAudioModel.AudioAsset );
+			}
+				
 		}
+		return TemporaryAviableAudioSources.Num() != 0;
 	}	
 	return false;
 }
@@ -257,16 +275,19 @@ void URookAudioController::CheckIfSourceFinishedPlaying( FAudioSourceModel Audio
 	}	
 }
 
-void URookAudioController::AfterFinishedPlaying( TWeakObjectPtr<AActor> Parent, FAudioSourceModel AudioSourceModel ) {
+void URookAudioController::AfterFinishedPlaying( const TWeakObjectPtr<AActor> Parent, const FAudioSourceModel AudioSourceModel ) {
 	if ( Parent.IsValid() && ( AudioSourceModel.PlaybackOption == EPlayback::Random || AudioSourceModel.PlaybackOption == EPlayback::Sequence ) ) {
 		Play( Parent );
 	}
-	OpenALSoft::Instance().RemoveAudioSource( AudioSourceModel.AudioSourceID );
+
+	if ( AudioSourceModel.AudioType == EAudioType::is3D ) 	
+		OpenALSoft::Instance().RemoveAudioSource( AudioSourceModel.AudioSourceID );
+	
 	AudioSources.Remove( AudioSourceModel.AudioSourceID );
 	AudioSources.Compact();	
 }
 
-void URookAudioController::UpdateLocation( TWeakObjectPtr<AActor> Parent, FAudioSourceModel AudioSourceModel ){
+void URookAudioController::UpdateLocation( const TWeakObjectPtr<AActor> Parent, FAudioSourceModel AudioSourceModel ){
 	if ( AudioSourceModel.AudioSourcePosition != Parent->GetActorLocation() ) {
 		AudioSourceModel.AudioSourcePosition = Parent->GetActorLocation();
 		OpenALSoft::Instance().UpdateAudioSourcePosition( AudioSourceModel.AudioSourceID, Parent->GetActorLocation() );
@@ -316,7 +337,7 @@ void URookAudioController::UpdateLocation( TWeakObjectPtr<AActor> Parent, FAudio
 				DrawDebugSphere(
 					RookUtils::Instance().GetWorld(),
 					Parent->GetActorLocation(),
-					LowpassGain,
+					LowpassHFGain,
 					24,
 					//lighter yellow
 					FColor( 255, 255, 0 ),
@@ -357,7 +378,7 @@ void URookAudioController::UpdateLocation( TWeakObjectPtr<AActor> Parent, FAudio
 	}	
 }
 
-void URookAudioController::RaytraceToListener( TWeakObjectPtr<AActor> Parent, uint32 AudioSourceID ) {
+void URookAudioController::RaytraceToListener( const TWeakObjectPtr<AActor> Parent, const uint32 AudioSourceID ) {
 	FVector StartPosition = Parent->GetActorLocation();
 	FVector EndPosition = ActiveListenerController->GetListenerLocation();
 	FHitResult Hit;
@@ -400,6 +421,26 @@ void URookAudioController::RaytraceToListener( TWeakObjectPtr<AActor> Parent, ui
 
 	PreRayedActor = nullptr;
 	TemporaryWorld = nullptr;
+}
+
+void URookAudioController::CheckAudioType() {
+	switch ( AudioSourceModel.AudioBus ) {
+		case EAudioBus::Ambience:
+		case EAudioBus::EFX:
+		case EAudioBus::Foley:
+		case EAudioBus::HUD:
+		case EAudioBus::Music:
+		case EAudioBus::SFX:
+		case EAudioBus::Voice:
+			AudioSourceModel.AudioType = EAudioType::is2D;
+			break;
+		case EAudioBus::EFX3D:
+		case EAudioBus::Foley3D:
+		case EAudioBus::SFX3D:
+		case EAudioBus::Voice3D:
+			AudioSourceModel.AudioType = EAudioType::is3D;
+			break;
+	}
 }
 
 URookAudioController::~URookAudioController() {

@@ -31,7 +31,6 @@ enum class EEAX : uint8 {
 
 UENUM( Category = "Rook Enums" )
 enum class EAudioBus : uint8 {
-		None,
 		Ambience,
 		EFX,
 		EFX3D,
@@ -46,9 +45,15 @@ enum class EAudioBus : uint8 {
 		MAX UMETA(Hidden)
 };
 
+UENUM(Category = "Rook Enums")
+enum class EAudioType : uint8 {
+	is2D,
+	is3D,
+	MAX UMETA(Hidden)
+};
+
 UENUM( Category = "Rook Enums" )
 enum class EPlayback : uint8 {
-		None,
 		Single,
 		Loop,
 		Random,

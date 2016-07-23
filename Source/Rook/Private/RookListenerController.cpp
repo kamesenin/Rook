@@ -38,17 +38,26 @@ void URookListenerController::Tick( float DeltaTime ) {
 	}		 
 }
 
-void URookListenerController::SetListenerActiveState( bool bIsActive ) {
-	IsTicking = bActive;
-	bActive = bIsActive;
+void URookListenerController::SetListenerActiveState( const bool bIsActive ) {
+	IsTicking = bIsActive;
 }
 
 bool URookListenerController::IsActive() const {
-	return bActive;
+	return IsTicking;
 }
 
-void URookListenerController::ChangeListenerType( EListenerType NewListenerType ) {
+void URookListenerController::ChangeListenerType( const EListenerType NewListenerType ) {
+	EListenerType TemporaryListenerType = ListenerType;
 	ListenerType = NewListenerType;
+	if ( !IsFollowerValid() ) {
+		UE_LOG( RookLog, Warning, TEXT("While setting new listener type actor to follow was NOT valid! Please set proper actor - to do that use SetActorOnListener, SetSocketOnListener or SetCameraOnListener. Listener type was not change.") );
+		ListenerType = TemporaryListenerType;
+		return;
+	}
+	if ( TemporaryListenerType == EListenerType::FollowMeshSocket && NewListenerType != EListenerType::FollowMeshSocket ) {
+		SocketActor->ConditionalBeginDestroy();
+		SocketActor = nullptr;
+	}
 }
 
 FVector	URookListenerController::GetListenerLocation() const {
@@ -88,7 +97,7 @@ void URookListenerController::CheckInitListenerType() {
 	}
 }
 
-void URookListenerController::UpdateListenerLocation( TWeakObjectPtr<class AActor> Actor ) {
+void URookListenerController::UpdateListenerLocation( const TWeakObjectPtr<class AActor> Actor ) {
 	FVector TempListenerForwardVector = Actor->GetActorForwardVector();
 	FVector TempListenerUpVector = Actor->GetActorUpVector();
 	FRotator TempRotator = Actor->GetActorRotation();
