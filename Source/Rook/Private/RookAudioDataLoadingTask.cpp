@@ -1,3 +1,7 @@
+/***
+Rook Audio Plugin
+Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
+**/
 #include "RookPrivatePCH.h"
 #include "RookAudioDataLoadingTask.h"
 #include "Engine.h"
@@ -30,7 +34,7 @@ void RookAudioDataLoadingTask::LoadData() {
 
 		for ( TWeakObjectPtr<USoundWave> SoundWave : AudioAssets ) {
 			WaveID = SoundWave->GetUniqueID();
-			if ( SoundWave->NumChannels == 1  && !OpenALSoft::Instance().Buffers.Contains( WaveID ) ) {								
+			if ( SoundWave->NumChannels == 1 ) {								
 #if WITH_OGGVORBIS
 				FByteBulkData* Bulk = SoundWave->GetCompressedData( TEXT("OGG") );
 				if ( Bulk ) {

@@ -1,3 +1,7 @@
+/***
+Rook Audio Plugin
+Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
+**/
 #pragma once
 #include "Engine.h"
 #include "Runtime/Core/Public/Containers/ContainersFwd.h"
@@ -45,10 +49,22 @@ struct FMonoAudioModel {
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	TWeakObjectPtr<class USoundWave>			AudioAsset = nullptr;
+	class USoundWave*							AudioAsset = nullptr;
 
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
 	TEnumAsByte<EPhysicalSurface>				SurfaceAffectingAudio = EPhysicalSurface::SurfaceType_Default;
+};
+
+/** Rook struct for setting multichannel (+1) audio asset. Audio gain is in decibels - range from 0 to -100 */
+USTRUCT(BlueprintType)
+struct FMultichannelAudioModel {
+	GENERATED_USTRUCT_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rook Audio")
+	class USoundWave*							AudioAsset = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rook Audio")
+	float										Decibels = 1.0f;
 };
 
 /** Rook struct for constructing new audio source */
@@ -64,7 +80,7 @@ struct FAudioSourceModel {
 	Ambience, EFX, Foley, HUD, Music, SFX, Voice.
 	*/
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	TArray<class USoundWave*>						MultiChannelAssets;
+	TArray<FMultichannelAudioModel>					MultiChannelAssets;
 
 	/**
 	Mono audio is used for 3D Audio.
@@ -105,21 +121,21 @@ struct FAudioSourceModel {
 	actor and audio listener.
 	*/
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	TWeakObjectPtr<class UCurveFloat>				VolumeOverDistanceCurve = nullptr;
+	class UCurveFloat*								VolumeOverDistanceCurve = nullptr;
 
 	/**
 	This curve is used for setting lowpass by calculating distance between parent
 	actor and audio listener.
 	*/
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	TWeakObjectPtr<class UCurveVector>				LowpassOverDistanceCurve = nullptr;
+	class UCurveVector*								LowpassOverDistanceCurve = nullptr;
 
 	/**
 	This curve is used for setting bandpass by calculating distance between parent
 	actor and audio listener.
 	*/
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	TWeakObjectPtr<class UCurveVector>				BandpassOverDistanceCurve = nullptr;
+	class UCurveVector*								BandpassOverDistanceCurve = nullptr;
 
 	/** Should audio source by affected by attachment velocity */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
@@ -129,6 +145,10 @@ struct FAudioSourceModel {
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
 	bool											bUseRaytrace = false;
 	
+	/** Helps to limit playing same Audio Controller on different actors */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rook Audio")
+	uint8											PlayLimit = 10;
+
 	/** Internal unique id of audio source */
 	UPROPERTY()
 	uint32											AudioSourceID = 0;

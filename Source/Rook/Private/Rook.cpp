@@ -1,3 +1,7 @@
+/***
+Rook Audio Plugin
+Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
+**/
 #include "RookPrivatePCH.h"
 #include "Rook.h"
 #include "OpenALSoft.h"
@@ -21,5 +25,7 @@ void FRook::StartupModule() {
 
 void FRook::ShutdownModule() {
 	OpenALSoft::Instance().CloseDeviceAndDestroyCurrentContext();
-	UE_LOG(RookLog, Log, TEXT("Rook shutdown"));
+	RookUtils::Instance().CleanData();
+	Listeners.Empty();
+	UE_LOG( RookLog, Log, TEXT( "Rook shutdown" ) );
 }

@@ -1,5 +1,11 @@
+/***
+Rook Audio Plugin
+Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
+**/
 #include "RookPrivatePCH.h"
 #include "RookUtils.h"
+#include "Runtime/Engine/Public/AudioEffect.h"
+#include "Runtime/Engine/Public/AudioDevice.h"
 
 RookUtils::RookUtils(void) {
 	SetUpEAXReverbMap();
@@ -177,4 +183,69 @@ UWorld* RookUtils::GetWorld( TEnumAsByte<EWorldType::Type> WorldType ) const {
 uint32 RookUtils::GetUniqueID() {
 	CurrentUniqeID++;
 	return CurrentUniqeID;
+}
+
+void RookUtils::SetReverbInUnreal( EEAX NewReverb ) {
+	FAudioDevice* AudioDevice = GEngine->GetMainAudioDevice();
+
+	if ( AudioDevice ) {
+		if ( NewReverb != EEAX::None ) {			
+			RemoveUnrealReverb();
+			PreviouseUnrealReverb = static_cast<int>( NewReverb );
+			EFXEAXREVERBPROPERTIES* OALReverbProperites = &EAXReverb[NewReverb];
+
+			if ( !UnrealReverb.IsValid() ) {
+				UnrealReverb = NewObject<UReverbEffect>( GetWorld() );
+			}
+
+			UnrealReverb->AirAbsorptionGainHF = OALReverbProperites->flAirAbsorptionGainHF;
+			UnrealReverb->DecayHFRatio = OALReverbProperites->flDecayHFRatio;
+			UnrealReverb->DecayTime = OALReverbProperites->flDecayTime;
+			UnrealReverb->Density = OALReverbProperites->flDensity;
+			UnrealReverb->Diffusion = OALReverbProperites->flDiffusion;
+			//TODO: make parameter
+			UnrealReverb->Gain = 1.0f;
+			UnrealReverb->GainHF = OALReverbProperites->flGainHF;
+			UnrealReverb->LateDelay = OALReverbProperites->flLateReverbDelay;
+			UnrealReverb->LateGain = OALReverbProperites->flLateReverbGain;
+			UnrealReverb->ReflectionsDelay = OALReverbProperites->flReflectionsDelay;
+			UnrealReverb->ReflectionsGain = OALReverbProperites->flReflectionsGain;
+			UnrealReverb->RoomRolloffFactor = OALReverbProperites->flRoomRolloffFactor;
+
+			FActivatedReverb UnrealActiveReverb;
+			UnrealActiveReverb.Priority = 10.0f;
+			UnrealActiveReverb.ReverbSettings.bApplyReverb = true;
+			UnrealActiveReverb.ReverbSettings.ReverbEffect = UnrealReverb.Get();
+
+			AudioDevice->ActivatedReverbs.Add( *( FString::FromInt( PreviouseUnrealReverb ) ), UnrealActiveReverb );
+			AudioDevice->ActivateReverbEffect( UnrealReverb.Get(), *( FString::FromInt(PreviouseUnrealReverb ) ), 11.0f, 0.25f, 0.0f );
+
+			OALReverbProperites = nullptr;
+		} else {
+			RemoveUnrealReverb();			
+		}
+		AudioDevice = nullptr;
+	}
+}
+
+void RookUtils::RemoveUnrealReverb() {
+	FAudioDevice* AudioDevice = GEngine->GetMainAudioDevice();
+	AudioDevice->DeactivateReverbEffect( *( FString::FromInt( PreviouseUnrealReverb ) ) );
+	if ( AudioDevice->ActivatedReverbs.Contains( *( FString::FromInt(PreviouseUnrealReverb ) ) ) )
+		AudioDevice->ActivatedReverbs.Remove( *( FString::FromInt(PreviouseUnrealReverb ) ) );
+}
+
+float RookUtils::DecibelsToVolume( float dB ) {
+	return FMath::Pow( 10, dB / 20 ) *100.0f;
+}
+
+float RookUtils::VolumeToDecibels( float Volume ) {
+	return 20 * FMath::LogX( 10, Volume );
+}
+
+void RookUtils::CleanData() {
+	UnrealReverb = nullptr;
+	EAXReverb.Empty();
+	SAC.Empty();
+	STC.Empty();
 }

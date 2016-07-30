@@ -1,3 +1,7 @@
+/***
+Rook Audio Plugin
+Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
+**/
 #include "RookPrivatePCH.h"
 #include "RookUtils.h"
 #include "RookAudioDataLoader.h"
@@ -385,7 +389,7 @@ void OpenALSoft::ChangeAudioSourcePitch( const uint32 AudioSourceUID, const floa
 
 void OpenALSoft::UpdateAudioSourcePosition( const uint32 AudioSourceUID, const FVector AudioSourcePosition ) {
 	if ( AudioSources.Contains( AudioSourceUID ) ) {
-		OALSource3f( AudioSources[AudioSourceUID], AL_POSITION, AudioSourcePosition.X, AudioSourcePosition.Z, AudioSourcePosition.Y );
+		OALSource3f( AudioSources[AudioSourceUID], AL_POSITION, -AudioSourcePosition.Y, AudioSourcePosition.Z, -AudioSourcePosition.X );
 		UpdateEAXReverbGain();
 	}
 }
@@ -427,7 +431,7 @@ void OpenALSoft::UpdateAudioListenerePosition( const FVector ListenerPosition, c
 
 		OALListener3f( AL_POSITION, ListenerPosition.X, ListenerPosition.Z, ListenerPosition.Y );
 		OALListenerfv( AL_ORIENTATION, ListenerOrientation );
-		UpdateEAXReverbGain();
+		UpdateEAXReverbGain();		
 	}
 }
 

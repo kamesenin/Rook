@@ -1,3 +1,7 @@
+/***
+Rook Audio Plugin
+Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
+**/
 #pragma once
 #include "Runtime/Engine/Classes/Engine/EngineBaseTypes.h"
 #include "Runtime/Engine/Classes/Engine/EngineTypes.h"
@@ -30,6 +34,8 @@ public:
 	void					ChangeSurface( const TEnumAsByte<EPhysicalSurface> NewSurface );
 	/** Changes EAX reverb for every audio source which is playing or will be played */
 	void					ChangeEAX( const EEAX NewEAX );
+	/** Changes desibels values for currently playing multichannel audio - range should be from 0.0f to -100.0f */
+	void					ChangeDecibelsOnActiveMultichannel( const float dB );
 public:
 	/** Data model for audio source(s) */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
@@ -72,12 +78,12 @@ private:
 	Function selects random asset from mono array. It prevents to repeat the same random choice as previously
 	@return weak pointer to audio asset
 	*/
-	TWeakObjectPtr<class USoundWave>				GetRandomMonoAudioSource();
+	TWeakObjectPtr<class USoundWave>				GetRandomAudioSource();
 	/**
 	Function selects gets next audio asset from array in sequence
 	@return weak pointer to audio asset
 	*/
-	TWeakObjectPtr<class USoundWave>				GetSequenceMonoAudioSource();
+	TWeakObjectPtr<class USoundWave>				GetSequenceAudioSource();
 	/**
 	Helper function for checking if mono audio source from model finished playing, if so changes it state.
 	@param AudioSourceModel - helps to get and change current state, getting mono audio source and audio source id
@@ -108,6 +114,29 @@ private:
 	void											RaytraceToListener( const TWeakObjectPtr<class AActor> Parent, const uint32 AudioSourceID );
 	/** Function checks current Audio Bus and sets Audio Type Rook enum. It simplyfiles check without going through audio buses */
 	void											CheckAudioType();
+	/** 
+	Function check if play limit has been reached - if not it will continue setting up audio source 
+	@return true if limit has been reached
+	*/
+	bool											HasPlayLimitReached();
+	/** 
+	Sets up new multichannel audio source via Unreal Audio Component
+	@param Parent - helps to set Outer of Audio Component
+	*/
+	void											SetUpMultichannelSource( const TWeakObjectPtr<class AActor> Parent );
+	/**
+	Get multichannel audio asset based on current audio Playback type
+	@return audio asset
+	*/
+	TWeakObjectPtr<class USoundWave>				GetMultichannelAudioSource();
+	/**
+	Function which is executed when multichannel audio finishes playing. Unreal Audio Component will be destroy and if audio Playback type is Loop, Random or Sequence ther will be Play call
+	@param UnrealAudioComponent
+	*/
+	void											MultichannelFinishedPlaying( UAudioComponent* UnrealAudioComponent );
+	/** Helper function - is triggred when OnEndPlay has been delegated */
+	UFUNCTION()
+	void											OnEndPlay();
 private:
 	/** TMap of current audio sources. Key is unique id of audio source, value is data model of it */
 	UPROPERTY()
@@ -133,4 +162,17 @@ private:
 	/** Helper temporary array of audio assets. Used while setting new audio source */
 	UPROPERTY()
 	TArray<TWeakObjectPtr<class USoundWave>>		TemporaryAviableAudioSources;
+	/** Helper value for holding desbiles of multichannel at startup */
+	float											BeginingDecbiles = -100.0f;
+	/** Array holding current multichannel Unreal Audio Components. */
+	UPROPERTY()
+	TArray<TWeakObjectPtr<UAudioComponent>>			MultichannelComponents;
+	/** Unreal Volume Multiplier. Volume on 3D souds and dB on multichannel will be multiplie by this value */
+	float											ApplicationVolumeMultiplier = 1.0f;
+	/** Shared Pointer to Rook interface - used to get active listeners and check enabled flag */
+	TSharedPtr<class IRook>							RookInterface = nullptr;
+	/** Helper boolean. If 3D audio source failed to play, in next tick controller will try it again - it's offten when audio data has not been loaded yet */
+	bool											b3DFailedToPlay = false;
+	/** Helper handler - helps to remove unesed delegate */
+	FDelegateHandle									EndPlayHnadle;
 };

@@ -1,3 +1,7 @@
+/***
+Rook Audio Plugin
+Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
+**/
 #include "RookPrivatePCH.h"
 #include "Runtime/Engine/Classes/GameFramework/Actor.h"
 #include "Runtime/Engine/Classes/Camera/PlayerCameraManager.h"
@@ -8,6 +12,7 @@
 #include "RookListenerController.h"
 
 URookListenerController::URookListenerController() {
+	RegisterListener();
 	CheckInitListenerType();
 }
 
@@ -20,6 +25,9 @@ TStatId URookListenerController::GetStatId() const {
 }
 
 void URookListenerController::Tick( float DeltaTime ) {
+	if (!bWasRegistered)
+		RegisterListener();
+
 	if ( !IsFollowerValid() ) {
 		return;
 	} else {
@@ -60,7 +68,7 @@ void URookListenerController::ChangeListenerType( const EListenerType NewListene
 	}
 }
 
-FVector	URookListenerController::GetListenerLocation() const {
+FVector	URookListenerController::GetListenerLocation() {
 	if ( !IsFollowerValid() ) {
 		return FVector( 0 );
 	} else {
@@ -89,19 +97,32 @@ void URookListenerController::CheckInitListenerType() {
 	}
 
 	if ( ListenerType == EListenerType::FollowCamera && !CameraToFollow.IsValid() ) {
-		if  ( RookUtils::Instance().GetWorld() ) {
-			for ( TActorIterator<APlayerCameraManager> Itr( RookUtils::Instance().GetWorld() ); Itr; ++Itr ) {
+		GetDefaultCamera();
+	}
+}
+
+void URookListenerController::GetDefaultCamera() {
+	UWorld* World = RookUtils::Instance().GetWorld();
+#if WITH_EDITOR
+	World = RookUtils::Instance().GetWorld( EWorldType::PIE );
+#endif
+	if  ( World ) {
+			for ( TActorIterator<APlayerCameraManager> Itr( World ); Itr; ++Itr ) {
 				CameraToFollow = Cast<APlayerCameraManager>( *Itr );
 			}
-		}		
-	}
+		}
 }
 
 void URookListenerController::UpdateListenerLocation( const TWeakObjectPtr<class AActor> Actor ) {
 	FVector TempListenerForwardVector = Actor->GetActorForwardVector();
 	FVector TempListenerUpVector = Actor->GetActorUpVector();
 	FRotator TempRotator = Actor->GetActorRotation();
+	if ( !bHasEndPlayDeleagate ) {
+		bHasEndPlayDeleagate = true;
+		Actor->OnEndPlay.AddDynamic( this, &URookListenerController::OnEndPlay );
+	}
 	
+	//UE_LOG(RookLog, Log, TEXT("x: %f, y:%f, z:%f "), Actor->GetActorLocation().X, Actor->GetActorLocation().Y, Actor->GetActorLocation().Z);
 	if ( bFreezRotation ) {
 		if ( FreezRotation.FreezXAxies == EFreezRotationState::Freez ) {
 			TempRotator.Roll = FreezRotation.XAxiesRotation;
@@ -125,34 +146,80 @@ void URookListenerController::UpdateListenerLocation( const TWeakObjectPtr<class
 	}
 }
 
-bool URookListenerController::IsFollowerValid() const {
+bool URookListenerController::IsFollowerValid() {
 	switch ( ListenerType ) {
 		case EListenerType::FollowActor:
-			return ActorToFollow.IsValid();
-			break;
+			return ActorToFollow.IsValid();			
 		case EListenerType::FollowMeshSocket:			
-			return SocketAttachment.MeshSocketToFollow.IsValid();
-			break;
+			return SocketAttachment.MeshSocketToFollow.IsValid();			
 		case EListenerType::FollowCamera:
-			return CameraToFollow.IsValid();
-			break;
+			if ( CameraToFollow.IsValid() ) {
+				return true;
+			} else {
+				GetDefaultCamera();
+			}
+			return false;
 	}
 	return false;
 }
 
 void URookListenerController::ValidatedSocketActor() {	
-	if ( !SocketActor.IsValid() && RookUtils::Instance().GetWorld() ) {
-		SocketActor = NewObject<AActor>( RookUtils::Instance().GetWorld() );
+	UWorld* World = RookUtils::Instance().GetWorld();
+#if WITH_EDITOR
+	World = RookUtils::Instance().GetWorld( EWorldType::PIE );
+#endif
+
+	if ( !SocketActor.IsValid() && World) {
+		SocketActor = NewObject<AActor>( World );
 		SocketAttachment.MeshSocketToFollow->AttachActor( SocketActor.Get(), SocketAttachment.CharacterWithSocket->GetMesh() );
 	}
 }
 
+void URookListenerController::RegisterListener() {
+	if ( RookInterface.IsValid() ) {
+		if ( !RookInterface->Listeners.Contains( this ) ) {
+			RookInterface->Listeners.Add( this );
+			bWasRegistered = true;
+		}
+	} else {
+		TSharedPtr<IModuleInterface> RookModule = FModuleManager::Get().GetModule("Rook");
+
+		if ( RookModule.IsValid() ) {
+			RookInterface = StaticCastSharedPtr<IRook>( RookModule );
+			RookInterface->Listeners.Add( this );
+			bWasRegistered = true;
+		}
+	}
+}
+
+void URookListenerController::OnEndPlay( AActor* Actor, EEndPlayReason::Type EndPlayReason ) {
+	bHasEndPlayDeleagate = false;
+	if ( Actor ) 
+		Actor->OnEndPlay.RemoveDynamic( this, &URookListenerController::OnEndPlay );
+
+	if ( RookInterface.IsValid() )
+		RookInterface->OnEndPlay.Broadcast();
+}
+
 URookListenerController::~URookListenerController() {
+	if ( ActorToFollow.IsValid() ) {
+		ActorToFollow->OnEndPlay.RemoveDynamic( this, &URookListenerController::OnEndPlay );
+	}
 	ActorToFollow = nullptr;
+
+	if ( CameraToFollow.IsValid() ) {
+		CameraToFollow->OnEndPlay.RemoveDynamic( this, &URookListenerController::OnEndPlay );
+	}
 	CameraToFollow = nullptr;
+
 	SocketAttachment.CharacterWithSocket = nullptr;
 	SocketAttachment.MeshSocketToFollow = nullptr;
 	if ( SocketActor.IsValid() ) {
+		SocketActor->OnEndPlay.RemoveDynamic( this, &URookListenerController::OnEndPlay );		
 		SocketActor->ConditionalBeginDestroy();
+	}
+	
+	if (RookInterface.IsValid() ) {		
+		RookInterface->Listeners.Remove( this );
 	}
 }

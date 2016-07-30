@@ -1,3 +1,7 @@
+/***
+Rook Audio Plugin
+Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
+**/
 #include "RookPrivatePCH.h"
 #include "RookListenerControllerBPL.h"
 #include "RookListenerController.h"
@@ -6,9 +10,15 @@ bool URookListenerControllerBPL::SetActiveListener( TSubclassOf<URookListenerCon
 	if ( !ListenerBlueprint )
 		return false;
 
-	for ( TObjectIterator<URookListenerController> Itr; Itr; ++Itr ) {
-		Itr->SetListenerActiveState( false );
+	TSharedPtr<IModuleInterface> RookModule = FModuleManager::Get().GetModule("Rook");
+
+	if ( RookModule.IsValid() ) {
+		TSharedPtr<IRook> RookInterface = StaticCastSharedPtr<IRook>( RookModule );
+		for ( TWeakObjectPtr<URookListenerController> ListenerController : RookInterface->Listeners ) {
+			ListenerController->SetListenerActiveState( false );
+		}
 	}
+
 	TWeakObjectPtr<URookListenerController> TemporaryListenerController = Cast<URookListenerController>( ListenerBlueprint->ClassDefaultObject );
 	TemporaryListenerController->SetListenerActiveState( true );
 	TemporaryListenerController = nullptr;

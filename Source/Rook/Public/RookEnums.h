@@ -1,3 +1,7 @@
+/***
+Rook Audio Plugin
+Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
+**/
 #pragma once
 #include "Engine.h"
 #include "Runtime/Core/Public/Containers/ContainersFwd.h"

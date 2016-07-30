@@ -1,10 +1,14 @@
 #include "RookPrivatePCH.h"
+/***
+Rook Audio Plugin
+Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
+**/
 #include "RookAudioControllerBPL.h"
 #include "RookAudioController.h"
 #include "RookEnums.h"
 
-bool URookAudioControllerBPL::Play( TSubclassOf<URookAudioController> AudioBlueprint, AActor* Parent ) {
-	if ( !AudioBlueprint )
+bool URookAudioControllerBPL::Play(TSubclassOf<URookAudioController> AudioBlueprint, AActor* Parent) {
+	if ( !AudioBlueprint || !Parent )
 		return false;
 
 	TWeakObjectPtr<URookAudioController> TemporaryAudioController = Cast<URookAudioController>( AudioBlueprint->ClassDefaultObject );
@@ -59,6 +63,16 @@ bool URookAudioControllerBPL::DebugLines( TSubclassOf<class URookAudioController
 
 	TWeakObjectPtr<URookAudioController> TemporaryAudioController = Cast<URookAudioController>( AudioBlueprint->ClassDefaultObject );
 	TemporaryAudioController->bUseDebugSpheres = UseDebuLines == EEnableState::Enable;
+	TemporaryAudioController = nullptr;
+	return true;
+}
+
+bool URookAudioControllerBPL::ChangeDecibelsOnActiveMultichannel( TSubclassOf<class URookAudioController> AudioBlueprint, float dB ) {
+	if ( !AudioBlueprint )
+		return false;
+
+	TWeakObjectPtr<URookAudioController> TemporaryAudioController = Cast<URookAudioController>( AudioBlueprint->ClassDefaultObject );
+	TemporaryAudioController->ChangeDecibelsOnActiveMultichannel( dB );
 	TemporaryAudioController = nullptr;
 	return true;
 }

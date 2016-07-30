@@ -3,10 +3,10 @@
 	
 	"FriendlyName" : "Rook",
 	"Version" : 0.1,
-	"VersionName" : "0.0.4",
+	"VersionName" : "0.0.5",
 	"CreatedBy" : "Tomasz",
 	"CreatedByURL" : "",
-	"EngineVersion" : "4.8.0",
+	"EngineVersion" : "4.12.5",
 	"Description" : "Rook - Audio plugin for Unreal 4",
 	"Category" : "Audio",
 	"EnabledByDefault" : true,

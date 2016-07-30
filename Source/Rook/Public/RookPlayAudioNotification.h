@@ -1,3 +1,7 @@
+/***
+Rook Audio Plugin
+Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
+**/
 #pragma once
 #include "Animation/AnimNotifies/AnimNotify.h"
 #include "Runtime/Engine/Classes/Engine/EngineTypes.h"

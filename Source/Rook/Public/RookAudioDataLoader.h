@@ -1,3 +1,7 @@
+/***
+Rook Audio Plugin
+Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
+**/
 #pragma once
 #include "Runtime/Engine/Classes/Engine/EngineBaseTypes.h"
 #include "Runtime/Engine/Classes/Engine/EngineTypes.h"
