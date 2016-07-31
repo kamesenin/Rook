@@ -389,14 +389,14 @@ void OpenALSoft::ChangeAudioSourcePitch( const uint32 AudioSourceUID, const floa
 
 void OpenALSoft::UpdateAudioSourcePosition( const uint32 AudioSourceUID, const FVector AudioSourcePosition ) {
 	if ( AudioSources.Contains( AudioSourceUID ) ) {
-		OALSource3f( AudioSources[AudioSourceUID], AL_POSITION, -AudioSourcePosition.Y, AudioSourcePosition.Z, -AudioSourcePosition.X );
+		OALSource3f( AudioSources[AudioSourceUID], AL_POSITION, AudioSourcePosition.X, AudioSourcePosition.Y, AudioSourcePosition.Z );
 		UpdateEAXReverbGain();
 	}
 }
 
 void OpenALSoft::UpdateAudioSourceVelocity( const uint32 AudioSourceUID, const FVector Velocity ) {
 	if ( AudioSources.Contains( AudioSourceUID ) ) {
-		OALSource3f( AudioSources[AudioSourceUID], AL_VELOCITY, Velocity.X, Velocity.Z, Velocity.Y );
+		OALSource3f( AudioSources[AudioSourceUID], AL_VELOCITY, Velocity.X, Velocity.Y, Velocity.Z );
 	}
 }
 
@@ -427,9 +427,9 @@ void OpenALSoft::SetUpAudioListener() {
 
 void OpenALSoft::UpdateAudioListenerePosition( const FVector ListenerPosition, const FVector ListenerForwardVector, const FVector ListenerUpVector ) {
 	if ( bWasDllLoaded ) {
-		ALfloat ListenerOrientation[] = { ListenerForwardVector.X, ListenerForwardVector.Y, ListenerForwardVector.Z, ListenerUpVector.X, ListenerUpVector.Y, ListenerUpVector.Z };
+		ALfloat ListenerOrientation[] = { ListenerForwardVector.X, ListenerForwardVector.Y, -ListenerForwardVector.Z, ListenerUpVector.X, ListenerUpVector.Y, -ListenerUpVector.Z };
 
-		OALListener3f( AL_POSITION, ListenerPosition.X, ListenerPosition.Z, ListenerPosition.Y );
+		OALListener3f( AL_POSITION, ListenerPosition.X, ListenerPosition.Y, ListenerPosition.Z );
 		OALListenerfv( AL_ORIENTATION, ListenerOrientation );
 		UpdateEAXReverbGain();		
 	}
