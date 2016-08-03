@@ -28,11 +28,11 @@ In implementation order:
 - Localization
 
 ##ChangeLog
-#0.0.59
+0.0.59
 BugFX version
 - refactor code
 - fixed issues with playing audio 
-#0.0.55
+0.0.55
 - Fixed listener orientation
 
 ##Whats up with coding style
