@@ -32,6 +32,7 @@ In implementation order:
 BugFX version
 - refactor code
 - fixed issues with playing audio 
+
 0.0.55
 - Fixed listener orientation
 
