@@ -94,7 +94,7 @@ public:
 	@param SourceData - its model from Audio Controller containing data to set up new audio source
 	@return boolean - true if data was set up proper and audio started to play
 	*/
-	bool						Play( FAudioSourceModel SourceData );
+	bool						Play( const FAudioSourceModel SourceData );
 	/**
 	Plays audio from given track position
 	@param AudioSourceUID - audio source unique id

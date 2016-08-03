@@ -162,7 +162,6 @@ struct FAudioSourceModel {
 	float											AudioSourceGain = 0.0f;
 
 	/** Initial audio source position */
-	UPROPERTY()
 	FVector											AudioSourcePosition;
 
 	/** Initial audio source pitch */

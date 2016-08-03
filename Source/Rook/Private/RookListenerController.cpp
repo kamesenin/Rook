@@ -117,12 +117,6 @@ void URookListenerController::UpdateListenerLocation( const TWeakObjectPtr<class
 	FVector TempListenerForwardVector = Actor->GetActorForwardVector();
 	FVector TempListenerUpVector = Actor->GetActorUpVector();
 	FRotator TempRotator = Actor->GetActorRotation();
-	if ( !bHasEndPlayDeleagate ) {
-		bHasEndPlayDeleagate = true;
-		Actor->OnEndPlay.AddDynamic( this, &URookListenerController::OnEndPlay );
-	}
-	
-	//UE_LOG(RookLog, Log, TEXT("x: %f, y:%f, z:%f "), Actor->GetActorLocation().X, Actor->GetActorLocation().Y, Actor->GetActorLocation().Z);
 	if ( bFreezRotation ) {
 		if ( FreezRotation.FreezXAxies == EFreezRotationState::Freez ) {
 			TempRotator.Roll = FreezRotation.XAxiesRotation;
@@ -139,7 +133,22 @@ void URookListenerController::UpdateListenerLocation( const TWeakObjectPtr<class
 		TempListenerForwardVector = FRotationMatrix( TempRotator ).GetScaledAxis( EAxis::X );
 		TempListenerUpVector = FRotationMatrix( TempRotator ).GetScaledAxis( EAxis::Z );
 	}
-	OpenALSoft::Instance().UpdateAudioListenerePosition( Actor->GetActorLocation(), TempListenerForwardVector, TempListenerUpVector );
+
+	if ( Actor->GetActorLocation() == LastListenerLocation && TempListenerForwardVector == LastListenerForwardVector && TempListenerUpVector == LastListenerUpVector )
+		return;
+	
+	LastListenerLocation = Actor->GetActorLocation();
+	LastListenerForwardVector = TempListenerForwardVector;
+	LastListenerUpVector = TempListenerUpVector;
+
+	if ( !bHasEndPlayDeleagate ) {
+		bHasEndPlayDeleagate = true;
+		Actor->OnEndPlay.AddDynamic( this, &URookListenerController::OnEndPlay );
+	}
+	
+	//UE_LOG(RookLog, Log, TEXT("x: %f, y:%f, z:%f "), LastListenerLocation.X, LastListenerLocation.Y, LastListenerLocation.Z);
+	
+	OpenALSoft::Instance().UpdateAudioListenerePosition( LastListenerLocation, LastListenerForwardVector, LastListenerUpVector );
 
 	if ( bUseVelocity ) {
 		OpenALSoft::Instance().UpdateAudioListenerVelocity( Actor->GetVelocity() );

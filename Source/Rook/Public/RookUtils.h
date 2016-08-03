@@ -63,6 +63,8 @@ public:
 	float				VolumeToDecibels( float Volume );
 	/** Cleans data on Utils */
 	void				CleanData();
+	/** Function will trigger log of current audio pool use in  OpenAL Soft */
+	void				LogCurrentAudioPool();
 public:
 	/** TMap of OpenAL Soft EAX Reverb properties - key is Rook enum, value is EAX Reverb properites*/
 	TMap<EEAX, EFXEAXREVERBPROPERTIES>  EAXReverb;
@@ -76,7 +78,7 @@ private:
 	/** Function populate TMap of SAC and STC */
 	void				SetUpAcusticsMap();
 	/** Function removes previouse Reverb for Unreal Audio Components */
-	void				RemoveUnrealReverb();
+	void				RemoveUnrealReverb();	
 	static RookUtils	Utils;
 	RookUtils();
 	RookUtils( const RookUtils& );

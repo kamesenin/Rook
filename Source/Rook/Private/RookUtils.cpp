@@ -243,6 +243,9 @@ float RookUtils::VolumeToDecibels( float Volume ) {
 	return 20 * FMath::LogX( 10, Volume );
 }
 
+void RookUtils::LogCurrentAudioPool() {
+	UE_LOG(RookLog, Warning, TEXT("Current Audio Sources Pool usage: %i / %i"), OpenALSoft::Instance().GetNumberOfAvailableAudioSourcesInPool(), OpenALSoft::Instance().MaximumAvailableAudioChannels);
+}
 void RookUtils::CleanData() {
 	UnrealReverb = nullptr;
 	EAXReverb.Empty();

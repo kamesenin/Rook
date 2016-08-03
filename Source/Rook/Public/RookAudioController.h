@@ -70,37 +70,37 @@ private:
 	void											CheckDataLoader();
 	/**
 	Based on audio playback enum return proper audio asset.
-	@param AudioSourceID - helps to check if audio source is in AudioSources array and what kind of Playback enum it has
+	@param AudioModelID - helps to check if audio source is in AudioSources array and what kind of Playback enum it has
 	@return weak pointer to audio asset
 	*/
-	TWeakObjectPtr<class USoundWave>				GetMonoAudioSource( const uint32 AudioSourceID );
+	TWeakObjectPtr<class USoundWave>				GetMonoAudioSource( const uint32 AudioModelID );
 	/**
 	Function selects random asset from mono array. It prevents to repeat the same random choice as previously
 	@return weak pointer to audio asset
 	*/
-	TWeakObjectPtr<class USoundWave>				GetRandomAudioSource();
+	TWeakObjectPtr<class USoundWave>				GetRandomAudioSource( const uint32 ParentID );
 	/**
 	Function selects gets next audio asset from array in sequence
 	@return weak pointer to audio asset
 	*/
-	TWeakObjectPtr<class USoundWave>				GetSequenceAudioSource();
+	TWeakObjectPtr<class USoundWave>				GetSequenceAudioSource( const uint32 ParentID );
 	/**
 	Helper function for checking if mono audio source from model finished playing, if so changes it state.
-	@param AudioSourceModel - helps to get and change current state, getting mono audio source and audio source id
+	@param AudioModelID - helps to get and change current state, getting mono audio source and audio source id
 	*/
-	void											CheckIfSourceFinishedPlaying( FAudioSourceModel AudioSourceModel );
+	void											CheckIfSourceFinishedPlaying( const uint32 AudioModelID );
 	/** 
 	Function removes entry in AudioSource TMap, removes audio source in OpenAl. Additionally if audio Playback is Random or Sequence it will play next audio source
 	@param Parent - is used when we want to play next track in Random or Sequence
-	@param AudioSourceModel - helps to set up new audio source and remove old one
+	@param AudioModelID - helps to set up new audio source and remove old one
 	*/
-	void											AfterFinishedPlaying( const TWeakObjectPtr<class AActor> Parent, const FAudioSourceModel AudioSourceModel );
+	void											AfterFinishedPlaying( const TWeakObjectPtr<class AActor> Parent, const uint32 AudioModelID );
 	/**
 	Update location of audio source based on parent position, velocity, audio gain, forward and up vector. Additionally in editor it can show debug spheres
 	@param Parent - weak pointer to parent actor
-	@param AudioSourceModel - helps to send information to OpenAL Soft
+	@param AudioModelID - helps to send information to OpenAL Soft
 	*/
-	void											UpdateLocation( const TWeakObjectPtr<class AActor> Parent, FAudioSourceModel AudioSourceModel );
+	void											UpdateLocation( const TWeakObjectPtr<class AActor> Parent, const uint32 AudioModelID );
 	/**
 	Check if current physical surface is the same as in MonoAudioModel.
 	@return if so it return true
@@ -149,10 +149,10 @@ private:
 	/** Weak pointer to data loader. Helps while we need to load new asset data */
 	UPROPERTY()
 	TWeakObjectPtr<class URookAudioDataLoader>		DataLoader = nullptr;
-	/** Helper to track last random audio source */
-	uint16											LastRandomIndex = 0;
-	/** Helper to track last sequence audio source */
-	uint16											LastSequenceIndex = 0;	
+	/** Helper to track last random audio source. Key is parent Actor ID ,value is last index */
+	TMap<uint32, uint16>							RandomIndicis;
+	/** Helper to track last sequence audio source. Key is parent Actor ID ,value is last index */	
+	TMap<uint32, uint16>							SequenceIndicis;
 	/** Current physical surface. Its Unreal enum */
 	UPROPERTY()
 	TEnumAsByte<EPhysicalSurface>					CurrentAudioControllerSurafce = EPhysicalSurface::SurfaceType_Default;
@@ -160,7 +160,6 @@ private:
 	UPROPERTY()
 	EEAX											CurrentAudioControllerEAX = EEAX::None;
 	/** Helper temporary array of audio assets. Used while setting new audio source */
-	UPROPERTY()
 	TArray<TWeakObjectPtr<class USoundWave>>		TemporaryAviableAudioSources;
 	/** Helper value for holding desbiles of multichannel at startup */
 	float											BeginingDecbiles = -100.0f;
@@ -173,6 +172,9 @@ private:
 	TSharedPtr<class IRook>							RookInterface = nullptr;
 	/** Helper boolean. If 3D audio source failed to play, in next tick controller will try it again - it's offten when audio data has not been loaded yet */
 	bool											b3DFailedToPlay = false;
+	/** Helper TMap for checking audio sources which didn't play - it's offten when audio data has not been loaded yet */
+	UPROPERTY()
+	TMap<uint32, bool>								FailedToPlayAudioModel;
 	/** Helper handler - helps to remove unesed delegate */
 	FDelegateHandle									EndPlayHnadle;
 };

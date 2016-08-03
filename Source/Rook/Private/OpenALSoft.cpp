@@ -138,7 +138,7 @@ void OpenALSoft::FreeOpenALDll() {
 	FPlatformProcess::FreeDllHandle( OALDLLHandler );
 }
 
-bool OpenALSoft::Play( FAudioSourceModel SourceData ) {
+bool OpenALSoft::Play( const FAudioSourceModel SourceData ) {
 	if ( AudioSourcesPool.Num() > 0 ) {		
 		if ( bHasReachPlayLimit ) {
 			bHasReachPlayLimit = false;
@@ -214,8 +214,7 @@ bool OpenALSoft::Play( FAudioSourceModel SourceData ) {
 
 				OALSourcePlay( TemporaryAudioSource );
 				CurrentLiveSourceCount = AudioSources.Num();
-				bHasAudioSourcePlayed = true;
-				SourceData.AudioState = EAudioState::Playing;
+				bHasAudioSourcePlayed = true;				
 				CatchError("playing source");
 			} else {
 				if ( SourceError.Contains( SourceData.AudioSourceID ) )	{
@@ -778,6 +777,8 @@ uint16 OpenALSoft::GetNumberOfAvailableAudioSourcesInPool() const {
 }
 
 void OpenALSoft::LoadAudioAsset( const TWeakObjectPtr<class USoundWave> AudioAsset, const bool bAddToMap ) {
+	if ( !AudioAsset.IsValid() )
+		return;
 	if ( DataLoader == nullptr ) {
 		URookAudioDataLoader* TemporaryDataLoader = nullptr;
 		for ( TObjectIterator<URookAudioDataLoader> Itr; Itr; ++Itr ) {

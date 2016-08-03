@@ -90,4 +90,8 @@ private:
 	/** Helper function - it's needed when Listener Controller stops audio when EndPlay */
 	UFUNCTION()
 	void							OnEndPlay( AActor* Actor, EEndPlayReason::Type EndPlayReason );
+
+	FVector							LastListenerLocation;
+	FVector							LastListenerForwardVector;
+	FVector							LastListenerUpVector;
 };
