@@ -73,6 +73,7 @@ struct FAudioSourceModel {
 	GENERATED_USTRUCT_BODY()
 
 	/** Audio Bus */
+	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
 	EAudioBus										AudioBus = EAudioBus::SFX3D;
 	/**
 	Multichannel audio (more than 1 channel).

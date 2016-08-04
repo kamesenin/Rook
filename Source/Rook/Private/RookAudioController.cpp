@@ -84,10 +84,12 @@ void URookAudioController::Tick( float DeltaTime ) {
 }
 
 void URookAudioController::Play( const TWeakObjectPtr<class AActor> Parent ) {
-	if ( HasPlayLimitReached() || !RookInterface->bIsRookEnabled )
+	if ( !RookInterface->bIsRookEnabled )
 		return;
 	CheckAudioType();
 	if ( AudioSourceModel.AudioType == EAudioType::is3D ) {
+		if ( HasPlayLimitReached() )
+			return;
 		GetAudioMaxiumDistance();
 		CheckIfBufferHasAudioData();
 		TemporaryAviableAudioSources.Empty();
@@ -122,7 +124,8 @@ void URookAudioController::Pause() {
 	} else {
 		//Yeah, I know, however Unreal Audio Component does not have Pause
 		for ( TWeakObjectPtr<UAudioComponent> MultichannelComponent : MultichannelComponents ) {
-			MultichannelComponent->Stop();
+			if( MultichannelComponent.IsValid() )
+				MultichannelComponent->Stop();
 		}
 	}
 }
@@ -154,7 +157,8 @@ void URookAudioController::Stop() {
 		}	
 	} else {
 		for ( TWeakObjectPtr<UAudioComponent> MultichannelComponent : MultichannelComponents ) {
-			MultichannelComponent->Stop();
+			if( MultichannelComponent.IsValid() )
+				MultichannelComponent->Stop();
 		}
 	}
 	RandomIndicis.Empty();
@@ -187,8 +191,10 @@ void URookAudioController::ChangeEAX( const EEAX NewEAX ) {
 
 void URookAudioController::ChangeDecibelsOnActiveMultichannel( const float Decibels ) {
 	for ( TWeakObjectPtr<UAudioComponent> MultichannelAudio : MultichannelComponents ) {
-		const float TemporaryVolume = RookUtils::Instance().DecibelsToVolume( Decibels ) * ApplicationVolumeMultiplier;
-		MultichannelAudio->SetVolumeMultiplier( TemporaryVolume );
+		if ( MultichannelAudio.IsValid() ) {
+			const float TemporaryVolume = RookUtils::Instance().DecibelsToVolume( Decibels ) * ApplicationVolumeMultiplier;
+			MultichannelAudio->SetVolumeMultiplier( TemporaryVolume );
+		}		
 	}
 }
 
@@ -576,7 +582,7 @@ void URookAudioController::SetUpMultichannelSource( const TWeakObjectPtr<class A
 			TemporaryAudioComp->bReverb = true;
 			RookUtils::Instance().SetReverbInUnreal( AudioSourceModel.AudioSourceEAX );
 		}		
-		const float TemporaryVolume = RookUtils::Instance().DecibelsToVolume( BeginingDecbiles ) * ApplicationVolumeMultiplier;
+		const float TemporaryVolume = RookUtils::Instance().DecibelsToVolume( BeginingDecbiles ) * ApplicationVolumeMultiplier * 0.01f;
 		TemporaryAudioComp->SetVolumeMultiplier( TemporaryVolume );
 		TemporaryAudioComp->Play();
 		MultichannelComponents.Add( TemporaryAudioComp );
@@ -613,7 +619,7 @@ TWeakObjectPtr<class USoundWave> URookAudioController::GetMultichannelAudioSourc
 
 void URookAudioController::MultichannelFinishedPlaying( UAudioComponent* UnrealAudioComponent ) {
 	const TWeakObjectPtr<AActor> Parent = Cast<AActor>( UnrealAudioComponent->GetOuter() );
-	MultichannelComponents.Remove( UnrealAudioComponent );
+	MultichannelComponents.Remove( UnrealAudioComponent );	
 	UnrealAudioComponent->ConditionalBeginDestroy();
 	switch ( AudioSourceModel.PlaybackOption ) {
 		case EPlayback::Loop:
@@ -638,7 +644,8 @@ URookAudioController::~URookAudioController() {
 
 	if ( MultichannelComponents.Num() > 0 )	{
 		for ( TWeakObjectPtr<UAudioComponent> UnrealAudioComponent : MultichannelComponents ) {
-			UnrealAudioComponent->ConditionalBeginDestroy();
+			if( UnrealAudioComponent.IsValid() )
+				UnrealAudioComponent->ConditionalBeginDestroy();
 		}
 		MultichannelComponents.Empty();
 	}
