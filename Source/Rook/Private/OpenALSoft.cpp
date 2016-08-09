@@ -831,33 +831,13 @@ bool OpenALSoft::CatchError( const FString ActionName ) {
 }
 
 void OpenALSoft::SetAudioDeviceAndCurrentContext() {
-	AudioDevice = OALOpenDevice("OpenAL Soft");
+	AudioDevice = GetBestAudioDevice();
 	if ( AudioDevice ) {
 		ALint AudioContextAttributes[2] = { ALC_MAX_AUXILIARY_SENDS , 1 };
 		
 		AudioContext = OALCreateContext( AudioDevice, AudioContextAttributes );
 
 		if ( OALMakeContextCurrent( AudioContext ) ) {
-			ALCint AttributesSize;
-			OALGetIntegerv( AudioDevice, ALC_ATTRIBUTES_SIZE, 1, &AttributesSize );
-			
-			TArray<ALCint> ALCAttributes;
-			ALCAttributes.SetNumZeroed( AttributesSize );
-			OALGetIntegerv( AudioDevice, ALC_ALL_ATTRIBUTES, AttributesSize, &ALCAttributes[0] );
-
-			bool bNextAttribute = false;
-
-			for ( ALCint Index : ALCAttributes ) {
-				if ( !bNextAttribute ) {
-					if (Index == ALC_MONO_SOURCES) {
-						bNextAttribute = true;
-					}
-				} else {
-					MaximumAvailableAudioChannels = Index;
-					break;
-				}			
-			}
-
 			OALDopplerFactor( DopplerFactor );		
 			bCanPlayAudio = true;			
 		} else {
@@ -866,6 +846,68 @@ void OpenALSoft::SetAudioDeviceAndCurrentContext() {
 	} else {
 		UE_LOG( RookLog, Warning, TEXT("There is no Audio Device") );
 	}
+}
+
+ALCdevice* OpenALSoft::GetBestAudioDevice() {
+	const ALCchar* TemporaryDeviceName = OALGetString( NULL, ALC_DEVICE_SPECIFIER );
+	const ALCchar* TemporaryNextDeviceName = TemporaryDeviceName + 1;
+	uint16 TemporaryNameSize = 0;
+	TMap< uint16, ALCdevice* > TemporaryDeviceMap;
+	ALCdevice* TempoaryAudioDevice;
+	TArray<ALCint> ALCAttributes;
+	ALCint AttributesSize;
+
+	while ( TemporaryDeviceName && *TemporaryDeviceName != '\0' && TemporaryNextDeviceName && *TemporaryNextDeviceName != '\0' ) {
+		//UE_LOG( RookLog, Log, TEXT("Device : %s"), TemporaryDeviceName );
+		TempoaryAudioDevice = OALOpenDevice( TemporaryDeviceName );
+		ALCAttributes.Empty();
+		AttributesSize = 0;
+		OALGetIntegerv( TempoaryAudioDevice, ALC_ATTRIBUTES_SIZE, 1, &AttributesSize );
+		
+		ALCAttributes.SetNumZeroed( AttributesSize );
+		OALGetIntegerv( TempoaryAudioDevice, ALC_ALL_ATTRIBUTES, AttributesSize, &ALCAttributes[0] );
+		
+		bool bNextAttribute = false;
+
+		for ( ALCint Attribute : ALCAttributes ) {
+			if ( !bNextAttribute ) {
+				if ( Attribute == ALC_MONO_SOURCES ) {
+					bNextAttribute = true;
+				}
+			} else {				
+				TemporaryDeviceMap.Add( Attribute, TempoaryAudioDevice );
+				break;
+			}
+		}
+		
+		TemporaryNameSize = strlen( TemporaryDeviceName );
+		TemporaryDeviceName += TemporaryNameSize + 1;
+		TemporaryNextDeviceName += TemporaryNameSize + 2;
+	}
+	ALCAttributes.Empty();
+
+	TempoaryAudioDevice = nullptr;
+				
+	TemporaryDeviceMap.KeySort( []( uint16 KeyA, uint16 KeyB ) { return KeyA < KeyB;	} );
+	TArray<uint16> MaximumChannelArray;
+	TArray<ALCdevice*> AudioDeviceArray;
+	TemporaryDeviceMap.GenerateKeyArray( MaximumChannelArray );
+	TemporaryDeviceMap.GenerateValueArray( AudioDeviceArray );
+	TemporaryDeviceMap.Empty();
+
+	if ( AudioDeviceArray.Num() != 0 )	{	
+		if ( AudioDeviceArray.Num() > 1 ) {
+			for ( uint16 Index = 1;  Index < AudioDeviceArray.Num(); ++Index ) {
+				OALCloseDevice( AudioDeviceArray[Index] );
+			}
+		}		
+	} else {
+		return nullptr;
+	}
+	
+	MaximumAvailableAudioChannels = MaximumChannelArray[0];
+	MaximumChannelArray.Empty();
+	return AudioDeviceArray[0];
 }
 
 void OpenALSoft::CloseDeviceAndDestroyCurrentContext() {

@@ -14,13 +14,14 @@ If You want to start working with Rook just grab latest version and under Your p
 - Remember: if You want to make it work in **Shipped** version of Your project, You need to place OpenAL Soft DLL under: *UE4\Engine\Binaries\ThirdParty\OpenAL\1.17.2* and proper folder for Win64, Win32, Linux or Mac
 
 ##Documentation
-Will be included in 0.0.6 version
+Will be included in 0.0.61 version
 
 ##TODO
 In implementation order:
 - Documentation
 - Fade In/Out
 - Delegates - finsish, new loop, new sequence
+- Check if possible to play multichannel with OpenAL Soft without virtualizing
 - EAX volume boxes
 - Mixer
 - Music system
@@ -28,6 +29,11 @@ In implementation order:
 - Localization
 
 ##ChangeLog
+0.0.6
+- Checks if audio asset has proper number of channels
+- Additional function which will choose best audio device based on channels number
+- Rook DLL for non C++ users. Now You can work with Rook in blueprint project. 
+
 0.0.59
 BugFX version
 - refactor code

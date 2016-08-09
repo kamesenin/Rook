@@ -1,2 +1,6 @@
 Intermediate/
-Binaries/
+Binaries/Win64/UE4Editor-Rook.pdb
+Binaries/Win64/UE4Editor-Rook-Win64-DebugGame.dll
+Binaries/Win64/UE4Editor-Rook-Win64-DebugGame.pdb
+Binaries/Win64/UE4Editor-Win64-DebugGame.modules
+Binaries/Win64/UE4-Rook-Win64-Shipping.lib

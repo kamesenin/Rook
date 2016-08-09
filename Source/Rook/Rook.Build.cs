@@ -20,8 +20,7 @@ namespace UnrealBuildTool.Rules
                 new string[] {
                     "Engine",
                     "InputCore",
-                    "Core",
-                    "EditorStyle",
+                    "Core",                    
                     "CoreUObject"
                 }
             );
@@ -32,6 +31,7 @@ namespace UnrealBuildTool.Rules
                     new string[] {
                         "UnrealEd",
                         "LevelEditor",
+                        "EditorStyle"
                     }
                 );
             }

@@ -507,4 +507,10 @@ private:
 	/** Weak pointer to data loader class */
 	UPROPERTY()
 	TWeakObjectPtr<class URookAudioDataLoader>		DataLoader = nullptr;	
+	/**
+	Function internaly creates list of aviable audio devices. By default it will choose device which has highest 
+	amount of audio channels, opens it and returns. 
+	@returns AudioDevice raw pointer	
+	**/
+	ALCdevice* GetBestAudioDevice();
 };

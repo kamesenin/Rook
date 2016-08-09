@@ -223,13 +223,13 @@ void URookAudioController::SetUpNewMonoAudio( const TWeakObjectPtr<AActor> Paren
 	AudioSources.Add( TemporaryNewAudioSourceID, AudioSourceModel );
 	AudioSources[TemporaryNewAudioSourceID].MonoAudioSourceAsset = GetMonoAudioSource( TemporaryNewAudioSourceID );
 
-	if (AudioSources[TemporaryNewAudioSourceID].MonoAudioSourceAsset == nullptr ) {
-		UE_LOG( RookLog, Warning, TEXT("While trying to Play, mono audio source is NULL! Will not play.") );
+	if ( AudioSources[TemporaryNewAudioSourceID].MonoAudioSourceAsset == nullptr || AudioSources[TemporaryNewAudioSourceID].MonoAudioSourceAsset->NumChannels != 1 ) {
+		UE_LOG( RookLog, Warning, TEXT("While trying to Play, Mono audio source is NULL or Multichannel! Will not play.") );
 		AudioSources.Remove( TemporaryNewAudioSourceID );
 		TemporaryAviableAudioSources.Empty();
 		return;
 	}	
-
+	
 	AudioSources[TemporaryNewAudioSourceID].AudioSourceID = TemporaryNewAudioSourceID;
 	AudioSources[TemporaryNewAudioSourceID].ParentID = Parent->GetUniqueID();
 	
@@ -569,6 +569,10 @@ void URookAudioController::SetUpMultichannelSource( const TWeakObjectPtr<class A
 	TemporaryAviableAudioSources.Empty();
 
 	if ( TemporaryAsset.IsValid() ) {
+		if ( TemporaryAsset->NumChannels == 1 ) {
+			UE_LOG( RookLog, Warning, TEXT("While trying to Play Multichannel audio asset %s was Mono. Will not play"), *TemporaryAsset->GetName() );
+			return;
+		}
 		TWeakObjectPtr<UAudioComponent> TemporaryAudioComp = NewObject<UAudioComponent>( Parent.Get() );
 		TemporaryAudioComp->OnAudioFinishedNative.AddUObject( this, &URookAudioController::MultichannelFinishedPlaying );
 		TemporaryAudioComp->SetSound( TemporaryAsset.Get() );
