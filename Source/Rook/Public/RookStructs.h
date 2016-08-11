@@ -64,7 +64,7 @@ struct FMultichannelAudioModel {
 	class USoundWave*							AudioAsset = nullptr;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rook Audio")
-	float										Decibels = 1.0f;
+	float										Decibels = 0.0f;
 };
 
 /** Rook struct for constructing new audio source */
