@@ -155,8 +155,8 @@ bool OpenALSoft::Play( const FAudioSourceModel SourceData ) {
 	uint32 TemporaryAudioAssetUID = 0;
 	ALuint TemporaryBuffer = AL_NONE;
 
-	if ( SourceData.MonoAudioSourceAsset.IsValid() ) {
-		TemporaryAudioAssetUID = SourceData.MonoAudioSourceAsset->GetUniqueID();
+	if ( SourceData.CurrentAudioSourceAsset.IsValid() ) {
+		TemporaryAudioAssetUID = SourceData.CurrentAudioSourceAsset->GetUniqueID();
 		bHasBufferData = Buffers.Contains( TemporaryAudioAssetUID );
 
 		if ( bHasBufferData ) {
@@ -172,7 +172,7 @@ bool OpenALSoft::Play( const FAudioSourceModel SourceData ) {
 			TemporaryAudioSource = AudioSourcesPool[0];
 			AudioSourcesPool.RemoveAt(0);
 
-			TemporaryAudioSourcePosition = SourceData.AudioSourcePosition;
+			TemporaryAudioSourcePosition = SourceData.AudioSourceLocation;
 			TemporaryAudioGain = SourceData.AudioSourceGain;
 
 			if ( TemporaryAudioGain < 0.0f ) {
@@ -189,17 +189,12 @@ bool OpenALSoft::Play( const FAudioSourceModel SourceData ) {
 
 			if ( !CatchError() ) {
 				AudioSourceGain.Add( SourceData.AudioSourceID, TemporaryAudioGain );
-
+				
 				if ( !AudioSources.Contains( SourceData.AudioSourceID ) ) {
 					AudioSources.Add( SourceData.AudioSourceID, TemporaryAudioSource );
 				}
 
-				if ( SourceData.PlaybackOption == EPlayback::Loop ) {
-					OALSourcei( TemporaryAudioSource, AL_LOOPING, AL_TRUE );
-				} else {
-					OALSourcei( TemporaryAudioSource, AL_LOOPING, AL_FALSE );
-				}
-
+				OALSourcei( TemporaryAudioSource, AL_LOOPING, AL_FALSE );
 				if ( SourceData.bUseRandomPitch ) {
 					OALSourcef( TemporaryAudioSource, AL_PITCH, SourceData.AudioSourceRandomPitch );
 				}
@@ -229,10 +224,10 @@ bool OpenALSoft::Play( const FAudioSourceModel SourceData ) {
 				CatchError("setting up source");
 			}
 		} else {
-			LoadAudioAsset( SourceData.MonoAudioSourceAsset, false );
+			LoadAudioAsset( SourceData.CurrentAudioSourceAsset, false );
 		}
 	} else {
-		LoadAudioAsset( SourceData.MonoAudioSourceAsset, true );
+		LoadAudioAsset( SourceData.CurrentAudioSourceAsset, true );
 	}
 
 	if ( CatchError() )	{
@@ -274,10 +269,12 @@ void OpenALSoft::ChangeAudioSourceGain( const uint32 AudioSourceUID, float Gain 
 		if ( bProceed ) {
 			AudioSourceGain[AudioSourceUID] = Gain;
 
-			if ( Gain < 0.5f ) {
-				Gain = 0.5f;
-			}	
-			OALSourcef( AudioSources[AudioSourceUID], AL_GAIN, ( Gain * 0.01f )*VolumeMultiplier );
+			if ( Gain < 0.005f ) 
+				Gain = 0.005f;
+				
+			//UE_LOG(RookLog, Warning, TEXT("gain %f "), (Gain)*VolumeMultiplier);
+
+			OALSourcef( AudioSources[AudioSourceUID], AL_GAIN, ( Gain )*VolumeMultiplier );
 		}
 	}
 }
@@ -839,6 +836,7 @@ void OpenALSoft::SetAudioDeviceAndCurrentContext() {
 
 		if ( OALMakeContextCurrent( AudioContext ) ) {
 			OALDopplerFactor( DopplerFactor );		
+			OALEnable( AL_SOURCE_DISTANCE_MODEL );
 			bCanPlayAudio = true;			
 		} else {
 			UE_LOG( RookLog, Warning, TEXT("No Current Audio Context!") );

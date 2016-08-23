@@ -1,4 +1,4 @@
-# Rook v 0.0.61
+# Rook v 0.0.7
 *"This is the journey into sound, sound sculpture in space"*
 ##Rook - Audio plugin for Unreal 4
 Rook is simple audio plugin for Unreal 4 Engine which usese OpenAL Soft for 3D sounds and Unreal 4 Audio Component for multichannel.
@@ -18,7 +18,6 @@ Check Rook github Wiki. It's still work in progress and will be updated over tim
 
 ##TODO
 In implementation order:
-- Fade In/Out
 - Delegates - finsish, new loop, new sequence
 - Check if possible to play multichannel with OpenAL Soft without virtualizing
 - EAX volume boxes
@@ -28,6 +27,10 @@ In implementation order:
 - Localization
 
 ##ChangeLog
+0.0.7
+- Fade in and out for 2D and 3D audio
+- bug fixes + fixing wrong functionality
+
 0.0.61
 - first documentation - WIP
 

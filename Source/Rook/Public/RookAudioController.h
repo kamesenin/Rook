@@ -70,25 +70,24 @@ private:
 	void											CheckDataLoader();
 	/**
 	Based on audio playback enum return proper audio asset.
-	@param AudioModelID - helps to check if audio source is in AudioSources array and what kind of Playback enum it has
 	@return weak pointer to audio asset
 	*/
-	TWeakObjectPtr<class USoundWave>				GetMonoAudioSource( const uint32 AudioModelID );
+	TWeakObjectPtr<class USoundWave>				GetMonoAudioSource();
 	/**
 	Function selects random asset from mono array. It prevents to repeat the same random choice as previously
 	@return weak pointer to audio asset
 	*/
-	TWeakObjectPtr<class USoundWave>				GetRandomAudioSource( const uint32 ParentID );
+	TWeakObjectPtr<class USoundWave>				GetRandomAudioSource();
 	/**
 	Function selects gets next audio asset from array in sequence
 	@return weak pointer to audio asset
 	*/
-	TWeakObjectPtr<class USoundWave>				GetSequenceAudioSource( const uint32 ParentID );
+	TWeakObjectPtr<class USoundWave>				GetSequenceAudioSource();
 	/**
 	Helper function for checking if mono audio source from model finished playing, if so changes it state.
 	@param AudioModelID - helps to get and change current state, getting mono audio source and audio source id
 	*/
-	void											CheckIfSourceFinishedPlaying( const uint32 AudioModelID );
+	void											CheckIfSourceFinishedPlaying( const uint32 AudioModelID, const float DeltaTime );
 	/** 
 	Function removes entry in AudioSource TMap, removes audio source in OpenAl. Additionally if audio Playback is Random or Sequence it will play next audio source
 	@param Parent - is used when we want to play next track in Random or Sequence
@@ -137,10 +136,29 @@ private:
 	/** Helper function - is triggred when OnEndPlay has been delegated */
 	UFUNCTION()
 	void											OnEndPlay();
+	/** Checks if mono audio will be fading */
+	void											CheckMonoFading();
+	/**
+	Perform mono audio fading 
+	@param AudioModelID - helps with fading
+	*/
+	void											PerformMonoFading( const uint32 AudioModelID );
+	/** 
+	Checks if multichannel should fade
+	@param UnrealAudioComponent - helps to add to helper tmap and getting pitch
+	*/
+	void											CheckMultichannelFading( const TWeakObjectPtr<class UAudioComponent> UnrealAudioComponent );
+	/**
+	Performs multichannel fade
+	@param DeltaTime - helps count time
+	*/
+	void											PerformMultichannelFading( const float DeltaTime );
+	/** Helper function for cleaning unused audio models */
+	void											CheckAndRemoveUnusedModels();
 private:
-	/** TMap of current audio sources. Key is unique id of audio source, value is data model of it */
+	/** TMap of current audio models in use. Key is unique id of audio source, value is data model of it */
 	UPROPERTY()
-	TMap<uint32, FAudioSourceModel>					AudioSources;
+	TMap<uint32, FAudioSourceModel>					AudioModels;
 	/** Weak pointer to current active listener controller */
 	UPROPERTY()
 	TWeakObjectPtr<class URookListenerController>	ActiveListenerController = nullptr;
@@ -165,7 +183,7 @@ private:
 	float											BeginingDecbiles = -100.0f;
 	/** Array holding current multichannel Unreal Audio Components. */
 	UPROPERTY()
-	TArray<TWeakObjectPtr<UAudioComponent>>			MultichannelComponents;
+	TArray<TWeakObjectPtr<class UAudioComponent>>	MultichannelComponents;
 	/** Unreal Volume Multiplier. Volume on 3D souds and dB on multichannel will be multiplie by this value */
 	float											ApplicationVolumeMultiplier = 1.0f;
 	/** Shared Pointer to Rook interface - used to get active listeners and check enabled flag */
@@ -176,5 +194,11 @@ private:
 	UPROPERTY()
 	TMap<uint32, bool>								FailedToPlayAudioModel;
 	/** Helper handler - helps to remove unesed delegate */
-	FDelegateHandle									EndPlayHnadle;
+	FDelegateHandle									EndPlayHnadle;	
+	/** Helper tmap holding current Unreal Audio Components for fading */
+	UPROPERTY()
+	TMap<TWeakObjectPtr<class UAudioComponent>, FMultichannelFadeModel>			MultichannelFadeHelper;
+	/** Helper array which holdes key for models that will be removed */
+	UPROPERTY()
+	TArray<uint32>									ModelsToRemove;
 };

@@ -53,6 +53,9 @@ struct FMonoAudioModel {
 
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
 	TEnumAsByte<EPhysicalSurface>				SurfaceAffectingAudio = EPhysicalSurface::SurfaceType_Default;
+	
+	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
+	class UCurveVector*							FadeCurve = nullptr;
 };
 
 /** Rook struct for setting multichannel (+1) audio asset. Audio gain is in decibels - range from 0 to -100 */
@@ -60,11 +63,14 @@ USTRUCT(BlueprintType)
 struct FMultichannelAudioModel {
 	GENERATED_USTRUCT_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rook Audio")
+	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
 	class USoundWave*							AudioAsset = nullptr;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rook Audio")
+	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
 	float										Decibels = 0.0f;
+
+	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
+	class UCurveVector*							FadeCurve = nullptr;
 };
 
 /** Rook struct for constructing new audio source */
@@ -74,14 +80,14 @@ struct FAudioSourceModel {
 
 	/** Audio Bus */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	EAudioBus										AudioBus = EAudioBus::SFX3D;
+	EAudioBus									AudioBus = EAudioBus::SFX3D;
 	/**
 	Multichannel audio (more than 1 channel).
 	Audio classes which should use it:
 	Ambience, EFX, Foley, HUD, Music, SFX, Voice.
 	*/
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	TArray<FMultichannelAudioModel>					MultiChannelAssets;
+	TArray<FMultichannelAudioModel>				MultiChannelAssets;
 
 	/**
 	Mono audio is used for 3D Audio.
@@ -89,99 +95,144 @@ struct FAudioSourceModel {
 	EFX3D, Foley3D, SFX3D, Voice3D.
 	*/
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	TArray<FMonoAudioModel>							MonoAssets;
+	TArray<FMonoAudioModel>						MonoAssets;
 
 	/** 
 	Sets what kinda playback option use wants
 	Playback options: Single, Loop, Random, SingleRandom, Sequence,	SingleSequence
 	*/
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	EPlayback										PlaybackOption = EPlayback::Single;
+	EPlayback									PlaybackOption = EPlayback::Single;
 	/** Should audio source use random pitch ? */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	bool											bUseRandomPitch = false;
+	bool										bUseRandomPitch = false;
 
 	/** If using random pitch please provide top value for randomnes */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	float											TopRandomPitchValue = 1.5f;
+	float										TopRandomPitchValue = 1.5f;
 
 	/** If using random pitch please provide bottom value for randomnes */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	float											BottomRandomPitchValue = 0.5f;
+	float										BottomRandomPitchValue = 0.5f;
 
 	/** EAX reverb effect which audio source should use. By defualt it is not using it */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	EEAX											AudioSourceEAX = EEAX::None;
+	EEAX										AudioSourceEAX = EEAX::None;
 
 	/** If there is EAX reverb set user can set gain (volume) of it */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	float											AudioSourceEAXGain = 0.0f;
+	float										AudioSourceEAXGain = 0.0f;
 
 	/**
 	This curve is used for setting volume by calculating distance between parent
 	actor and audio listener.
 	*/
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	class UCurveFloat*								VolumeOverDistanceCurve = nullptr;
+	class UCurveFloat*							VolumeOverDistanceCurve = nullptr;
 
 	/**
 	This curve is used for setting lowpass by calculating distance between parent
 	actor and audio listener.
 	*/
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	class UCurveVector*								LowpassOverDistanceCurve = nullptr;
+	class UCurveVector*							LowpassOverDistanceCurve = nullptr;
 
 	/**
 	This curve is used for setting bandpass by calculating distance between parent
 	actor and audio listener.
 	*/
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	class UCurveVector*								BandpassOverDistanceCurve = nullptr;
+	class UCurveVector*							BandpassOverDistanceCurve = nullptr;
+
+	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
+	class UCurveVector*							FadeCurve = nullptr;
 
 	/** Should audio source by affected by attachment velocity */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	bool											bUseVelocity = false;
+	bool										bUseVelocity = false;
 
 	/** Raytrace is very primitive way to calculate dynamic audio gain and lowpass. */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	bool											bUseRaytrace = false;
+	bool										bUseRaytrace = false;
 	
 	/** Helps to limit playing same Audio Controller on different actors */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rook Audio")
-	uint8											PlayLimit = 10;
+	uint8										PlayLimit = 10;
 
 	/** Internal unique id of audio source */
 	UPROPERTY()
-	uint32											AudioSourceID = 0;
+	uint32										AudioSourceID = 0;
 
 	/** Parent id is a helper for finding/checking parent actor of audio source */
 	UPROPERTY()
-	uint32											ParentID;
+	uint32										ParentID;
 
 	/** Initial audio source gain */
 	UPROPERTY()
-	float											AudioSourceGain = 0.0f;
+	float										AudioSourceGain = 0.0f;
 
 	/** Initial audio source position */
-	FVector											AudioSourcePosition;
-
+	UPROPERTY()
+	FVector										AudioSourceLocation;
+	
 	/** Initial audio source pitch */
 	UPROPERTY()
-	float											AudioSourceRandomPitch = 1.0f;
+	float										AudioSourceRandomPitch = 1.0f;
 
 	/** Mono audio asset used while setting new OpenAL Soft source and track current position on track */
 	UPROPERTY()
-	TWeakObjectPtr<class USoundWave>				MonoAudioSourceAsset;
+	TWeakObjectPtr<class USoundWave>			CurrentAudioSourceAsset = nullptr;
+
+	UPROPERTY()
+	TWeakObjectPtr<class UCurveVector>			IndividualFadeCurve = nullptr;
 
 	/** Helper Rook enum. Audio can have states like: Playing, Stopped, Paused, WasPlaying */
 	UPROPERTY()
-	EAudioState										AudioState = EAudioState::None;
+	EAudioState									AudioState = EAudioState::None;
 		
 	/** Helper boolean. If source is finished and in sequence, it will automaticly play next track in line */
 	UPROPERTY()
-	bool											bInSequence = false;
+	bool										bInSequence = false;
 
 	/** Initial audio type - simplifies check without going trough audio bus */
 	UPROPERTY()
-	EAudioType										AudioType = EAudioType::is2D;
+	EAudioType									AudioType = EAudioType::is2D;
+	/** Fade factor is used for 3D audio assets */
+	UPROPERTY()
+	float										FadeFactor = 1.0f;
+	/** Helper to determin if 3D audio should fade in */
+	UPROPERTY()
+	bool										bFadeIn = false;
+	/** Helper. It determins at which point in time 3D source should fade out */
+	UPROPERTY()
+	float										StartFadeOutAt = 0.0f;
+	/** Helper float. It track current position on track */
+	UPROPERTY()
+	float										OverallTime = 0.0f;
+};
+
+USTRUCT( BlueprintType )
+struct FMultichannelFadeModel {
+	GENERATED_USTRUCT_BODY()
+	/** Helper bool. True if multichannel audio should fade in */
+	UPROPERTY()
+	bool										bFadeIn = false;
+	/** Fade factor is used for multichannel audio */
+	UPROPERTY()
+	float										FadeFactor = 1.0f;
+	/** When in time multichannel audio should start to fade out */
+	UPROPERTY()
+	float										StartFadeOutAt = 0.0f;
+	/** Helper weak pointer to fade vector curve */
+	UPROPERTY()
+	TWeakObjectPtr<class UCurveVector>			FadeCurve = nullptr;
+	/** Temporary time for vector curve - used for fade in and out */
+	UPROPERTY()
+	float										FadeTime = 0.0f;
+	/** Overall playback time of multichannel audio source */
+	UPROPERTY()
+	float										OverallTime = 0.0f;
+	/** Helper float. Holdes volume and helps to calculate fade volume */
+	UPROPERTY()
+	float										InternalVolume = 0.0f;
 };
