@@ -14,10 +14,11 @@ public:
 	Plays Rook Audio
 	@param AudioBlueprint - Rook Audio blueprint which will be played
 	@param Parent - on which actor audio will be played
+	@param Tag - helper FName for tracing a delegate on Finish
 	@return true if AudioBlueprint and Parent are valid
 	*/
 	UFUNCTION(BlueprintCallable, Category = "Rook|Audio")
-	static bool				Play( TSubclassOf<class URookAudioController> AudioBlueprint, AActor* Parent );
+	static class URookAudioController*				Play( TSubclassOf<class URookAudioController> AudioBlueprint, AActor* Parent, FName Tag = "" );
 	/**
 	Stops Rook Audio
 	@param AudioBlueprint - Rook Audio blueprint which will be stoped

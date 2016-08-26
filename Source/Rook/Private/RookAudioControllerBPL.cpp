@@ -7,14 +7,13 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "RookAudioController.h"
 #include "RookEnums.h"
 
-bool URookAudioControllerBPL::Play(TSubclassOf<URookAudioController> AudioBlueprint, AActor* Parent) {
+URookAudioController* URookAudioControllerBPL::Play( TSubclassOf<URookAudioController> AudioBlueprint, AActor* Parent, FName Tag ) {
 	if ( !AudioBlueprint || !Parent )
-		return false;
+		return nullptr;
 
 	TWeakObjectPtr<URookAudioController> TemporaryAudioController = Cast<URookAudioController>( AudioBlueprint->ClassDefaultObject );
-	TemporaryAudioController->Play( Parent );
-	TemporaryAudioController = nullptr;
-	return true;
+	TemporaryAudioController->Play( Parent, Tag );
+	return TemporaryAudioController.Get();
 }
 
 bool URookAudioControllerBPL::Stop( TSubclassOf<URookAudioController> AudioBlueprint ) {

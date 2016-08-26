@@ -100,9 +100,10 @@ void URookAudioController::CheckAndRemoveUnusedModels() {
 	AudioModels.Compact();
 }
 
-void URookAudioController::Play( const TWeakObjectPtr<class AActor> Parent ) {
+void URookAudioController::Play( const TWeakObjectPtr<class AActor> Parent, FName Tag ) {
 	if ( !RookInterface->bIsRookEnabled )
 		return;
+	TemporaryTag = Tag;
 	CheckAudioType();
 	if ( AudioSourceModel.AudioType == EAudioType::is3D ) {
 		if ( HasPlayLimitReached() )
@@ -121,6 +122,7 @@ void URookAudioController::Play( const TWeakObjectPtr<class AActor> Parent ) {
 	} else {
 		SetUpMultichannelSource( Parent );
 	}
+	TemporaryTag = "";
 }
 
 void URookAudioController::Pause() {
@@ -242,6 +244,8 @@ void URookAudioController::SetUpNewMonoAudio( const TWeakObjectPtr<AActor> Paren
 	AudioSourceModel.AudioSourceID = TemporaryNewAudioSourceID;
 	AudioSourceModel.ParentID = Parent->GetUniqueID();
 	AudioSourceModel.CurrentAudioSourceAsset = GetMonoAudioSource();
+
+	AudioSourceModel.Tag = TemporaryTag;
 
 	if ( AudioSourceModel.CurrentAudioSourceAsset == nullptr || AudioSourceModel.CurrentAudioSourceAsset->NumChannels != 1 ) {
 		UE_LOG( RookLog, Warning, TEXT("While trying to Play, Mono audio source is NULL or Multichannel! Will not play.") );
@@ -492,12 +496,19 @@ void URookAudioController::AfterFinishedPlaying( const TWeakObjectPtr<AActor> Pa
 	if ( AudioModels[AudioModelID].AudioType == EAudioType::is3D )
 		OpenALSoft::Instance().RemoveAudioSource( AudioModels[AudioModelID].AudioSourceID );
 	ModelsToRemove.Add( AudioModelID );	
-
+	FinishPlaying.Broadcast( AudioModels[AudioModelID].Tag );
+	
 	if ( Parent.IsValid() ) {
 		switch ( LastPlaybackOption ) {
 		case EPlayback::Loop:
+			FinishLoop.Broadcast( AudioModels[AudioModelID].Tag );
+			Play( Parent );
+			break;
 		case EPlayback::Random:
+			Play( Parent );
+			break; 
 		case EPlayback::Sequence:
+			FinishSequence.Broadcast( AudioModels[AudioModelID].Tag );
 			Play( Parent );
 			break;
 		}
@@ -694,7 +705,9 @@ void URookAudioController::SetUpMultichannelSource( const TWeakObjectPtr<class A
 		TWeakObjectPtr<UAudioComponent> TemporaryAudioComp = NewObject<UAudioComponent>( Parent.Get() );
 		TemporaryAudioComp->OnAudioFinishedNative.AddUObject( this, &URookAudioController::MultichannelFinishedPlaying );
 		TemporaryAudioComp->SetSound( TemporaryAsset.Get() );
-
+		
+		TemporaryAudioComp->ComponentTags.Add( TemporaryTag );
+		
 		if ( AudioSourceModel.bUseRandomPitch ) {
 			TemporaryAudioComp->PitchModulationMin = AudioSourceModel.BottomRandomPitchValue;
 			TemporaryAudioComp->PitchModulationMax = AudioSourceModel.TopRandomPitchValue;
@@ -789,11 +802,19 @@ void URookAudioController::MultichannelFinishedPlaying( UAudioComponent* UnrealA
 	MultichannelFadeHelper.Remove( UnrealAudioComponent );
 	MultichannelFadeHelper.Compact();
 	AudioSourceModel.IndividualFadeCurve = nullptr;
+	FinishPlaying.Broadcast( UnrealAudioComponent->ComponentTags[0] );
 	UnrealAudioComponent->ConditionalBeginDestroy();
+
 	switch ( AudioSourceModel.PlaybackOption ) {
 		case EPlayback::Loop:
+			FinishLoop.Broadcast( UnrealAudioComponent->ComponentTags[0] );
+			Play(Parent);
+			break;
 		case EPlayback::Random:
+			Play(Parent);
+			break;
 		case EPlayback::Sequence:
+			FinishSequence.Broadcast( UnrealAudioComponent->ComponentTags[0] );
 			Play( Parent );
 		break;
 	}

@@ -209,6 +209,9 @@ struct FAudioSourceModel {
 	/** Helper float. It track current position on track */
 	UPROPERTY()
 	float										OverallTime = 0.0f;
+
+	UPROPERTY()
+	FName										Tag = "";
 };
 
 USTRUCT( BlueprintType )

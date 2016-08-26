@@ -12,6 +12,8 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 UCLASS( ShowCategories = ( Mobility ), ClassGroup = Audio, Blueprintable )
 class ROOK_API URookAudioController : public UObject, public FTickableGameObject {
 	GENERATED_BODY()
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam( FRookDelegate, FName, TagName );
 public:
 	URookAudioController();
 	virtual ~URookAudioController();
@@ -22,7 +24,7 @@ public:
 	/** Function for playing audio
 	@param Parent - weak pointer to parent actor - its needed for positioning 
 	*/
-	void					Play( const TWeakObjectPtr<class AActor> Parent );
+	void					Play( const TWeakObjectPtr<class AActor> Parent, FName Tag = "" );
 	/** Pauses/Unpauses audio */
 	void					Pause();
 	/** Stops audio */
@@ -42,6 +44,15 @@ public:
 	FAudioSourceModel								AudioSourceModel;
 	/** Helper boolean for showing debug sphere. Blue is for audio gain, yellow for lowpass, green for bandpass */
 	bool											bUseDebugSpheres = false;
+	/** Delegate on playback finish */
+	UPROPERTY( EditAnywhere, BlueprintAssignable, Category = "Rook Audio" )
+	FRookDelegate									FinishPlaying;
+	/** Delegate when loop is done */
+	UPROPERTY( EditAnywhere, BlueprintAssignable, Category = "Rook Audio" )
+	FRookDelegate									FinishLoop;
+	/** Delegate when sequence is done */
+	UPROPERTY( EditAnywhere, BlueprintAssignable, Category = "Rook Audio" )
+	FRookDelegate									FinishSequence;
 private:
 	/** 
 	Check if current audio controller has active audio listener controller 
@@ -201,4 +212,7 @@ private:
 	/** Helper array which holdes key for models that will be removed */
 	UPROPERTY()
 	TArray<uint32>									ModelsToRemove;
+	/** Helper for holding a Tag */
+	UPROPERTY()
+	FName											TemporaryTag;
 };
