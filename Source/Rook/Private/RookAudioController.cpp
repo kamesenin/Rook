@@ -19,7 +19,8 @@ URookAudioController::URookAudioController() {
 	TSharedPtr<IModuleInterface> RookModule = FModuleManager::Get().GetModule( "Rook" );
 	if ( RookModule.IsValid() ) {
 		 RookInterface = StaticCastSharedPtr<IRook>( RookModule );	
-		 EndPlayHnadle = RookInterface->OnEndPlay.AddUObject( this, &URookAudioController::OnEndPlay );
+		 EndPlayHandle = RookInterface->OnEndPlay.AddUObject( this, &URookAudioController::OnEndPlay );
+		 EAXOverlapHandle = RookInterface->OnEAXOverlap.AddUObject( this, &URookAudioController::EAXOverlap );
 	}
 }
 
@@ -53,6 +54,26 @@ void URookAudioController::Tick( float DeltaTime ) {
 			if ( !bHasFail )
 				FailedToPlayAudioModel.Empty();
 		}			
+
+		if ( OutOfRangeParents.Num() > 0 ) {
+			GetAudioMaxiumDistance();
+			TArray<TWeakObjectPtr<AActor>> ParentsToRemove;
+			if ( HasActiveListenerController() ) {
+				for ( TWeakObjectPtr<AActor> TemporaryParent : OutOfRangeParents ) {
+					if ( RookUtils::Instance().InSpehereRadius( TemporaryParent->GetActorLocation(), ActiveListenerController->GetListenerLocation(), MaxiumDistanceToListener ) ) {
+						Play( TemporaryParent );
+						ParentsToRemove.Add( TemporaryParent );
+					}
+				}
+
+				if ( ParentsToRemove.Num() ) {
+					for ( TWeakObjectPtr<AActor> TemporaryParent : ParentsToRemove ) {
+						OutOfRangeParents.Remove( TemporaryParent );
+					}
+					ParentsToRemove.Empty();
+				}
+			}			
+		}
 
 		if ( AudioModels.Num() > 0 ) {
 			for ( TPair< uint32, FAudioSourceModel >& Kvp : AudioModels ) {
@@ -112,12 +133,20 @@ void URookAudioController::Play( const TWeakObjectPtr<class AActor> Parent, FNam
 		CheckIfBufferHasAudioData();
 		TemporaryAviableAudioSources.Empty();
 	
-		if ( HasActiveListenerController() && HasAudioModelCurrentSurface() && RookUtils::Instance().InSpehereRadius( Parent->GetActorLocation(), ActiveListenerController->GetListenerLocation(), MaxiumDistanceToListener ) ) {
-			if ( !ShouldUnPause( Parent->GetUniqueID() ) ) {
-				SetUpNewMonoAudio( Parent );
+		if ( HasActiveListenerController() && HasAudioModelCurrentSurface() ) {
+			bool bShouldPlay = true;
+			if ( !bPlayOutsideDistanceRange ) 
+				bShouldPlay = RookUtils::Instance().InSpehereRadius( Parent->GetActorLocation(), ActiveListenerController->GetListenerLocation(), MaxiumDistanceToListener );
+			
+			if ( bShouldPlay ) {
+				if ( !ShouldUnPause( Parent->GetUniqueID() ) ) {
+					SetUpNewMonoAudio( Parent );
+				} else {
+					Pause();
+				}
 			} else {
-				Pause();
-			}		
+				OutOfRangeParents.AddUnique( Parent );
+			}
 		}
 	} else {
 		SetUpMultichannelSource( Parent );
@@ -199,7 +228,7 @@ void URookAudioController::ChangeEAX( const EEAX NewEAX ) {
 		if ( AudioModels.Num() > 0 ) {
 			for ( TPair< uint32, FAudioSourceModel >& Kvp : AudioModels ) {
 				if ( Kvp.Value.AudioType == EAudioType::is3D ) {
-					OpenALSoft::Instance().SetEAXOnAudioSource( NewEAX, Kvp.Key );
+					OpenALSoft::Instance().SetEAXOnAudioSource( CurrentAudioControllerEAX, Kvp.Key );
 				}
 			}
 		}
@@ -824,6 +853,19 @@ void URookAudioController::OnEndPlay() {
 	Stop();
 }
 
+void URookAudioController::EAXOverlap( const uint32 ActorID, const EEAX EAX ) {
+	for ( TPair< uint32, FAudioSourceModel >& Kvp : AudioModels ) {
+		if ( Kvp.Value.ParentID == ActorID ) {
+			if ( Kvp.Value.AudioType == EAudioType::is3D ) {
+				OpenALSoft::Instance().SetEAXOnAudioSource( EAX, Kvp.Key );
+			} else {
+				RookUtils::Instance().SetReverbInUnreal( EAX );
+			}
+			break;
+		}
+	}
+}
+
 URookAudioController::~URookAudioController() {
 	if ( AudioModels.Num() > 0 )	{
 		for ( TPair< uint32, FAudioSourceModel >& Kvp : AudioModels ) {
@@ -841,8 +883,10 @@ URookAudioController::~URookAudioController() {
 	}
 	MultichannelFadeHelper.Empty();
 
-	if( RookInterface.IsValid() )
-		RookInterface->OnEndPlay.Remove( EndPlayHnadle );
+	if( RookInterface.IsValid() ) {
+		RookInterface->OnEndPlay.Remove( EndPlayHandle );
+		RookInterface->OnEAXOverlap.Remove( EAXOverlapHandle );
+	}
 	if ( FailedToPlayAudioModel.Num() > 0 )
 		FailedToPlayAudioModel.Empty();
 	ActiveListenerController = nullptr;

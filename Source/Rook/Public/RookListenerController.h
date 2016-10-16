@@ -18,17 +18,17 @@ public:
 
 	virtual bool					IsTickable() const override;
 	virtual TStatId					GetStatId() const override;
-	virtual void					Tick(float DeltaTime) override;
+	virtual void					Tick( float DeltaTime ) override;
 	/**
 	Function setting current audio controller to be active or not
 	@param bActive - if true controller not only be active, but also will be ticking and vice versa
 	*/
-	void							SetListenerActiveState(const bool bActive);
+	void							SetListenerActiveState( const bool bActive );
 	/**
 	Function changes listener type based on enum: FollowCamera, FollowActor, FollowMeshSocket
 	@param NewListenerType - Rook enum
 	*/
-	void							ChangeListenerType(const EListenerType NewListenerType);
+	void							ChangeListenerType( const EListenerType NewListenerType );
 	/**
 	Helper function for other classes to get current listener controller location vector
 	@return FVector with current location
@@ -41,23 +41,23 @@ public:
 	bool							IsActive() const;
 public:
 	/** Sets an Actor which Listener Controller will follow */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rook Listener")
-		TWeakObjectPtr<class AActor>					ActorToFollow = nullptr;
+	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Listener" )
+	TWeakObjectPtr<class AActor>					ActorToFollow = nullptr;
 	/** Sets a Camera which Listener Controller will follow */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rook Listener")
-		TWeakObjectPtr<class APlayerCameraManager>		CameraToFollow = nullptr;
+	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Listener" )
+	TWeakObjectPtr<class APlayerCameraManager>		CameraToFollow = nullptr;
 	/** Sets a Socket which Listener Controller will attach to. To have proper attachment not only socket has to be provident, but also character which has it. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rook Listener")
-		FSocketAttachment								SocketAttachment;
+	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Listener" )
+	FSocketAttachment								SocketAttachment;
 	/** Should Listener Controller have frozen rotation. If so it will use FFreezRotation struct */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rook Listener")
-		bool											bFreezRotation = false;
+	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Listener" )
+	bool											bFreezRotation = false;
 	/** Struct for frozen rotation. It can freeze separate axies (X, Y, Z) with given rotation FVector */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rook Listener")
-		FFreezRotation									FreezRotation;
+	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Listener" )
+	FFreezRotation									FreezRotation;
 	/** Should Listener Controller sends its velocity. It affects output of the audio */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Rook Listener")
-		bool											bUseVelocity = false;
+	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Listener" )
+	bool											bUseVelocity = false;
 private:
 	/** Helper boolean. If controller is not active it will not tick */
 	bool							IsTicking = true;

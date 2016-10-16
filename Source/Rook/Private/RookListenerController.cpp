@@ -25,7 +25,7 @@ TStatId URookListenerController::GetStatId() const {
 }
 
 void URookListenerController::Tick( float DeltaTime ) {
-	if (!bWasRegistered)
+	if ( !bWasRegistered )
 		RegisterListener();
 
 	if ( !IsFollowerValid() ) {
@@ -106,7 +106,7 @@ void URookListenerController::GetDefaultCamera() {
 #if WITH_EDITOR
 	World = RookUtils::Instance().GetWorld( EWorldType::PIE );
 #endif
-	if  ( World ) {
+	if ( World ) {
 			for ( TActorIterator<APlayerCameraManager> Itr( World ); Itr; ++Itr ) {
 				CameraToFollow = Cast<APlayerCameraManager>( *Itr );
 			}
@@ -145,8 +145,6 @@ void URookListenerController::UpdateListenerLocation( const TWeakObjectPtr<class
 		bHasEndPlayDeleagate = true;
 		Actor->OnEndPlay.AddDynamic( this, &URookListenerController::OnEndPlay );
 	}
-	
-	//UE_LOG(RookLog, Log, TEXT("x: %f, y:%f, z:%f "), LastListenerLocation.X, LastListenerLocation.Y, LastListenerLocation.Z);
 	
 	OpenALSoft::Instance().UpdateAudioListenerePosition( LastListenerLocation, LastListenerForwardVector, LastListenerUpVector );
 

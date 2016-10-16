@@ -19,7 +19,9 @@ public:
 	@param Radius
 	@return true if TargetLocation is in shpere radius
 	*/
-	bool				InSpehereRadius(FVector SourceLocation, FVector TargetLocation, float Radius) const;
+	inline bool RookUtils::InSpehereRadius( FVector SourceLocation, FVector TargetLocation, float Radius ) const {
+		return ( FMath::Pow( ( SourceLocation.X - TargetLocation.X ), 2.0f ) + FMath::Pow( ( SourceLocation.Y - TargetLocation.Y ), 2.0f ) + FMath::Pow( ( SourceLocation.Z - TargetLocation.Z ), 2.0f ) ) <= Radius * Radius;
+	}
 	/**
 	Helper function. Returns current world with give world type - by default its Game, however it can be PIE, Editor, Preview and Inactive
 	@param WorldType - Game, PIE, Editor, Preview and Inactive
@@ -30,20 +32,26 @@ public:
 	Helper function. Returns new Rook internal unique ID - usefule while we don't want to create UObject
 	@return Unique ID
 	*/
-	uint32				GetUniqueID();
+	inline uint32 RookUtils::GetUniqueID() {
+		return ++CurrentUniqeID;
+	}
 	/**
 	Function calculate material Sound Transmission Class
 	@param MeshDepth 
 	@param MeshSize
 	@return STC factor
 	*/
-	float				CalculateSTC( float MeshDepth, float MeshSize );
+	inline float RookUtils::CalculateSTC( float MeshDepth, float MeshSize ) {
+		return 13.4f + 11.4f * ( log10( MeshSize ) ) + 0.0826f * MeshDepth;
+	}
 	/**
 	Function return avarage material Sound Absorption Coefficient
 	@param MeshDepth
 	@return SAC factor
 	*/
-	float				AvarageSAC( float MeshDepth );
+	inline float RookUtils::AvarageSAC( float MeshDepth ) {
+		return 0.073f + 0.0001f * MeshDepth;
+	}
 	/**
 	Function sets EAX reverb effect in on Unreal Audio Componets - if off cource they are having bReverb flag set to true
 	@param EEAX - Rook EAX enum
@@ -54,13 +62,17 @@ public:
 	@param dB - decibels in range of 0.0f to -100.0f
 	@return volume value
 	*/
-	float				DecibelsToVolume( float dB );
+	inline float RookUtils::DecibelsToVolume( float dB ) {
+		return FMath::Pow( 10, dB / 20.0f ) * 100.0f;
+	}
 	/**
 	Function converts volume to decibles - range from 0.0f to -100.0f
 	@param Volume - in range 0.0f to 100.0f
 	@return decibels
 	*/
-	float				VolumeToDecibels( float Volume );
+	inline float RookUtils::VolumeToDecibels( float Volume ) {
+		return 20.0f * FMath::LogX( 10.0f, Volume );
+	}
 	/** Cleans data on Utils */
 	void				CleanData();
 	/** Function will trigger log of current audio pool use in  OpenAL Soft */

@@ -43,15 +43,19 @@ public:
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
 	FAudioSourceModel								AudioSourceModel;
 	/** Helper boolean for showing debug sphere. Blue is for audio gain, yellow for lowpass, green for bandpass */
+	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
 	bool											bUseDebugSpheres = false;
+	/** Helper boolean. If set to true audio will play even though its outside distance sphere */
+	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
+	bool											bPlayOutsideDistanceRange = false;
 	/** Delegate on playback finish */
-	UPROPERTY( EditAnywhere, BlueprintAssignable, Category = "Rook Audio" )
+	UPROPERTY( BlueprintAssignable, Category = "Rook Audio" )
 	FRookDelegate									FinishPlaying;
 	/** Delegate when loop is done */
-	UPROPERTY( EditAnywhere, BlueprintAssignable, Category = "Rook Audio" )
+	UPROPERTY( BlueprintAssignable, Category = "Rook Audio" )
 	FRookDelegate									FinishLoop;
 	/** Delegate when sequence is done */
-	UPROPERTY( EditAnywhere, BlueprintAssignable, Category = "Rook Audio" )
+	UPROPERTY( BlueprintAssignable, Category = "Rook Audio" )
 	FRookDelegate									FinishSequence;
 private:
 	/** 
@@ -166,6 +170,12 @@ private:
 	void											PerformMultichannelFading( const float DeltaTime );
 	/** Helper function for cleaning unused audio models */
 	void											CheckAndRemoveUnusedModels();
+	/*
+	* Function is called when an actor begins or ends overlaping of EAX Volume.
+	* @param ActorID - id of overlaping actor, helps determin parent actor of audio controller
+	* @param EAX - which EAX enum has EAX Volume
+	*/
+	void											EAXOverlap( const uint32 ActorID, const EEAX EAX );
 private:
 	/** TMap of current audio models in use. Key is unique id of audio source, value is data model of it */
 	UPROPERTY()
@@ -205,7 +215,7 @@ private:
 	UPROPERTY()
 	TMap<uint32, bool>								FailedToPlayAudioModel;
 	/** Helper handler - helps to remove unesed delegate */
-	FDelegateHandle									EndPlayHnadle;	
+	FDelegateHandle									EndPlayHandle;	
 	/** Helper tmap holding current Unreal Audio Components for fading */
 	UPROPERTY()
 	TMap<TWeakObjectPtr<class UAudioComponent>, FMultichannelFadeModel>			MultichannelFadeHelper;
@@ -215,4 +225,9 @@ private:
 	/** Helper for holding a Tag */
 	UPROPERTY()
 	FName											TemporaryTag;
+	/** Helper delegate handle - used when controller is cleaning data */
+	FDelegateHandle									EAXOverlapHandle;
+	/** Helper array. Contains parent actors which were outside distance range. */
+	UPROPERTY()
+	TArray<TWeakObjectPtr<class AActor>>			OutOfRangeParents;
 };

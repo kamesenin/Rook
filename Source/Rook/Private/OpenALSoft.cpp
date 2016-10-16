@@ -269,11 +269,9 @@ void OpenALSoft::ChangeAudioSourceGain( const uint32 AudioSourceUID, float Gain 
 		if ( bProceed ) {
 			AudioSourceGain[AudioSourceUID] = Gain;
 
-			if ( Gain < 0.005f ) 
-				Gain = 0.005f;
+			if ( Gain < 0.001f ) 
+				Gain = 0.001f;
 				
-			//UE_LOG(RookLog, Warning, TEXT("gain %f "), (Gain)*VolumeMultiplier);
-
 			OALSourcef( AudioSources[AudioSourceUID], AL_GAIN, ( Gain )*VolumeMultiplier );
 		}
 	}

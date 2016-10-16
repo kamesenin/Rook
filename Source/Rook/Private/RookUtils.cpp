@@ -147,18 +147,6 @@ void RookUtils::SetUpAcusticsMap() {
 	SAC.Add( "PHM_Concrete", 0.1f );
 }
 
-float RookUtils::CalculateSTC( float MeshDepth, float MeshSize ) {
-	return 13.4f + 11.4* ( log10( MeshSize ) ) + 0.0826*MeshDepth;
-}
-
-float RookUtils::AvarageSAC( float MeshDepth ) {
-	return 0.073f + 0.0001*MeshDepth;
-}
-
-bool RookUtils::InSpehereRadius( FVector SourceLocation, FVector TargetLocation, float Radius ) const {
-	return ( FMath::Pow( ( SourceLocation.X - TargetLocation.X ), 2.0f ) + FMath::Pow( ( SourceLocation.Y - TargetLocation.Y ), 2.0f ) + FMath::Pow( ( SourceLocation.Z - TargetLocation.Z ), 2.0f ) ) <= Radius * Radius;
-}
-
 UWorld* RookUtils::GetWorld( TEnumAsByte<EWorldType::Type> WorldType ) const {
 	if ( !GEngine )
 		return nullptr;
@@ -180,11 +168,6 @@ UWorld* RookUtils::GetWorld( TEnumAsByte<EWorldType::Type> WorldType ) const {
 	return nullptr;
 }
 
-uint32 RookUtils::GetUniqueID() {
-	CurrentUniqeID++;
-	return CurrentUniqeID;
-}
-
 void RookUtils::SetReverbInUnreal( EEAX NewReverb ) {
 	FAudioDevice* AudioDevice = GEngine->GetMainAudioDevice();
 
@@ -194,9 +177,8 @@ void RookUtils::SetReverbInUnreal( EEAX NewReverb ) {
 			PreviouseUnrealReverb = static_cast<int>( NewReverb );
 			EFXEAXREVERBPROPERTIES* OALReverbProperites = &EAXReverb[NewReverb];
 
-			if ( !UnrealReverb.IsValid() ) {
+			if ( !UnrealReverb.IsValid() ) 
 				UnrealReverb = NewObject<UReverbEffect>( GetWorld() );
-			}
 
 			UnrealReverb->AirAbsorptionGainHF = OALReverbProperites->flAirAbsorptionGainHF;
 			UnrealReverb->DecayHFRatio = OALReverbProperites->flDecayHFRatio;
@@ -235,16 +217,8 @@ void RookUtils::RemoveUnrealReverb() {
 		AudioDevice->ActivatedReverbs.Remove( *( FString::FromInt(PreviouseUnrealReverb ) ) );
 }
 
-float RookUtils::DecibelsToVolume( float dB ) {
-	return FMath::Pow( 10, dB / 20 ) *100.0f;
-}
-
-float RookUtils::VolumeToDecibels( float Volume ) {
-	return 20 * FMath::LogX( 10, Volume );
-}
-
 void RookUtils::LogCurrentAudioPool() {
-	UE_LOG(RookLog, Warning, TEXT("Current Audio Sources Pool usage: %i / %i"), OpenALSoft::Instance().GetNumberOfAvailableAudioSourcesInPool(), OpenALSoft::Instance().MaximumAvailableAudioChannels);
+	UE_LOG( RookLog, Warning, TEXT("Current Audio Sources Pool usage: %i / %i"), OpenALSoft::Instance().GetNumberOfAvailableAudioSourcesInPool(), OpenALSoft::Instance().MaximumAvailableAudioChannels );
 }
 void RookUtils::CleanData() {
 	UnrealReverb = nullptr;
