@@ -8,7 +8,8 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "RookAudioDataLoader.generated.h"
 
 UCLASS()
-class ROOK_API URookAudioDataLoader : public UObject, public FTickableGameObject {
+class ROOK_API URookAudioDataLoader : public UObject, public FTickableGameObject 
+{
 	GENERATED_BODY()
 public:
 	URookAudioDataLoader() {};

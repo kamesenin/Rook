@@ -1,8 +1,7 @@
 {
-	"Changelist" : 3039270,
-	"BuildId" : "f7c82740-c1d3-4f52-9e8a-0dfea2a67c1e",
-	"Modules" : 
+	"BuildId": "3709383",
+	"Modules": 
 	{
-		"Rook" : "UE4Editor-Rook.dll"
+		"Rook": "UE4Editor-Rook.dll"
 	}
 }

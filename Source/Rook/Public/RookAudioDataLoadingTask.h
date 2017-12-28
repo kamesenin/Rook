@@ -5,23 +5,28 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #pragma once
 #include "Runtime/Core/Public/Async/TaskGraphInterfaces.h"
 
-class RookAudioDataLoadingTask {
+class RookAudioDataLoadingTask 
+{
 public:
 	RookAudioDataLoadingTask( TArray<TWeakObjectPtr<class USoundWave>> Assets ):AudioAssets( Assets ) {};
 
-	static const TCHAR* GetTaskName() {
+	static const TCHAR* GetTaskName() 
+	{
 		return TEXT("RookAudioDataLoadingTask");
 	}
 
-	FORCEINLINE static TStatId GetStatId() {
+	FORCEINLINE static TStatId GetStatId() 
+	{
 		RETURN_QUICK_DECLARE_CYCLE_STAT( RookAudioDataLoadingTask, STATGROUP_TaskGraphTasks );
 	}
 
-	static ENamedThreads::Type GetDesiredThread() {
+	static ENamedThreads::Type GetDesiredThread() 
+	{
 		return ENamedThreads::AnyThread;
 	}
 
-	static ESubsequentsMode::Type GetSubsequentsMode() {
+	static ESubsequentsMode::Type GetSubsequentsMode() 
+	{
 		return ESubsequentsMode::FireAndForget;
 	}
 

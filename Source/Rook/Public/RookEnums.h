@@ -8,7 +8,8 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "RookEnums.generated.h"
 
 UENUM( Category = "Rook Enums" )
-enum class EEAX : uint8 {
+enum class EEAX : uint8 
+{
 		None, GenericEffect, PaddedCell, Room, Bathroom, Livingroom, StoneRoom, Auditorium,
 		ConcertHall, Cave, Arena, Hangar, CarpetedHallway, Hallway, StoneCorridor, Alley,
 		Forest, City, Mountains, Quarry, Plain, ParkingLot, SewerPipe, Underwater, Drugged,
@@ -34,7 +35,8 @@ enum class EEAX : uint8 {
 };
 
 UENUM( Category = "Rook Enums" )
-enum class EAudioBus : uint8 {
+enum class EAudioBus : uint8 
+{
 		Ambience,
 		EFX,
 		EFX3D,
@@ -50,14 +52,16 @@ enum class EAudioBus : uint8 {
 };
 
 UENUM(Category = "Rook Enums")
-enum class EAudioType : uint8 {
+enum class EAudioType : uint8 
+{
 	is2D,
 	is3D,
 	MAX UMETA(Hidden)
 };
 
 UENUM( Category = "Rook Enums" )
-enum class EPlayback : uint8 {
+enum class EPlayback : uint8 
+{
 		Single,
 		Loop,
 		Random,
@@ -68,7 +72,8 @@ enum class EPlayback : uint8 {
 };
 
 UENUM(Category = "Rook Enums")
-enum class EAudioState : uint8 {
+enum class EAudioState : uint8 
+{
 	None,
 	Playing,
 	Stopped,
@@ -78,21 +83,24 @@ enum class EAudioState : uint8 {
 };
 
 UENUM(Category = "Rook Enums")
-enum class EFreezRotationState : uint8 {
-		NoFreez,
-		Freez,
-		MAX UMETA(Hidden)
+enum class EFreezRotationState : uint8 
+{
+	NoFreez,
+	Freez,
+	MAX UMETA(Hidden)
 };
 
 UENUM(Category = "Rook Enums")
-enum class EEnableState : uint8 {
+enum class EEnableState : uint8 
+{
 	Enable,
 	Disable,
 	MAX UMETA(Hidden)
 };
 
 UENUM(Category = "Rook Enums")
-enum class EListenerType : uint8 {
+enum class EListenerType : uint8 
+{
 	FollowCamera,
 	FollowActor,
 	FollowMeshSocket,

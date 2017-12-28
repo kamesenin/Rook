@@ -12,20 +12,19 @@ IMPLEMENT_MODULE(FRook, Rook);
 
 #define LOCTEXT_NAMESPACE "Rook"
 
-void FRook::StartupModule() {
-	
-	if ( FParse::Param( FCommandLine::Get(), TEXT("TurnOffRook") ) ) {
+void FRook::StartupModule() 
+{
+	if (FParse::Param(FCommandLine::Get(), TEXT("TurnOffRook"))) 	
 		bIsRookEnabled = false;
-	}
 
-	if ( OpenALSoft::Instance().IsDLLLoaded() ) {
-		UE_LOG( RookLog, Log, TEXT("OpenAL DLL was Loaded") );
-	}	
+	if (OpenALSoft::Instance().IsDLLLoaded()) 
+		UE_LOG(RookLog, Log, TEXT("OpenAL DLL was Loaded"));	
 }
 
-void FRook::ShutdownModule() {
+void FRook::ShutdownModule() 
+{
 	OpenALSoft::Instance().CloseDeviceAndDestroyCurrentContext();
 	RookUtils::Instance().CleanData();
 	Listeners.Empty();
-	UE_LOG( RookLog, Log, TEXT( "Rook shutdown" ) );
+	UE_LOG(RookLog, Log, TEXT("Rook shutdown"));
 }

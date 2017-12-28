@@ -5,18 +5,21 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #pragma once
 #include "ModuleManager.h"
 #include "RookEnums.h"
-#include "Runtime/Core/Public/Delegates/DelegateSignatureImpl_Variadics.inl"
+#include "Runtime/Core/Public/Delegates/DelegateSignatureImpl.inl"
 
 DECLARE_MULTICAST_DELEGATE( FEndPlay );
 DECLARE_MULTICAST_DELEGATE_TwoParams( FEAXOverlap, const uint32, const EEAX );
 
-class IRook : public IModuleInterface {
+class IRook : public IModuleInterface 
+{
 public:
-	static inline IRook& Get() {
+	static inline IRook& Get() 
+	{
 		return FModuleManager::LoadModuleChecked< IRook >("Rook");
 	}
 
-	static inline bool IsAvailable() {
+	static inline bool IsAvailable() 
+	{
 		return FModuleManager::Get().IsModuleLoaded("Rook");
 	}
 

@@ -6,7 +6,8 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "IRook.h"
 DECLARE_LOG_CATEGORY_EXTERN( RookLog, Log, All );
 
-class FRook : public IRook {
+class FRook : public IRook 
+{
 public:
 	virtual void			StartupModule() override;
 	virtual void			ShutdownModule() override;

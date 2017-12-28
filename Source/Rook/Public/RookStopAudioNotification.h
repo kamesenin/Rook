@@ -9,7 +9,8 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "RookStopAudioNotification.generated.h"
 
 UCLASS( Blueprintable, meta = ( DisplayName = "RookStopAudioNotification" ) )
-class ROOK_API URookStopAudioNotification : public UAnimNotify {
+class ROOK_API URookStopAudioNotification : public UAnimNotify 
+{
 	GENERATED_BODY()
 
 public:

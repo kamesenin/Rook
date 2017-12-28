@@ -84,7 +84,8 @@ typedef			void ( *DefAlDopplerVelocity )( ALfloat Value );
 
 typedef			ALCboolean ( *DefAlcDeviceEnableHrtf )( ALCdevice* Device, ALboolean Enable );
 
-class OpenALSoft {
+class OpenALSoft 
+{
 public:
 	/** Istance of OpenAL Soft class */
 	static OpenALSoft&			Instance();

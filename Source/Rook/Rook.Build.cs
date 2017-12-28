@@ -5,7 +5,7 @@ namespace UnrealBuildTool.Rules
 {
     public class Rook : ModuleRules
     {
-        public Rook(TargetInfo target)
+        public Rook(ReadOnlyTargetRules target) : base(target)
         {
             PrivateIncludePaths.AddRange(new string[] { "Rook/Private" });
 

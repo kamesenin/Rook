@@ -9,7 +9,8 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "RookPlayAudioNotification.generated.h"
 
 UCLASS( Blueprintable, meta = ( DisplayName = "RookPlayAudioNotification") )
-class ROOK_API URookPlayAudioNotification : public UAnimNotify {
+class ROOK_API URookPlayAudioNotification : public UAnimNotify 
+{
 	GENERATED_BODY()
 
 public:

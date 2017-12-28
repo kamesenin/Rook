@@ -8,7 +8,8 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "OpenALSoft/include/AL/efx-presets.h"
 #include "OpenALSoft/include/AL/efx-creative.h"
 
-class RookUtils {
+class RookUtils
+{
 public:
 	static RookUtils&	Instance();
 	~RookUtils() {};
@@ -19,7 +20,8 @@ public:
 	@param Radius
 	@return true if TargetLocation is in shpere radius
 	*/
-	inline bool RookUtils::InSpehereRadius( FVector SourceLocation, FVector TargetLocation, float Radius ) const {
+	inline bool InSpehereRadius( FVector SourceLocation, FVector TargetLocation, float Radius ) const 
+	{
 		return ( FMath::Pow( ( SourceLocation.X - TargetLocation.X ), 2.0f ) + FMath::Pow( ( SourceLocation.Y - TargetLocation.Y ), 2.0f ) + FMath::Pow( ( SourceLocation.Z - TargetLocation.Z ), 2.0f ) ) <= Radius * Radius;
 	}
 	/**
@@ -32,7 +34,8 @@ public:
 	Helper function. Returns new Rook internal unique ID - usefule while we don't want to create UObject
 	@return Unique ID
 	*/
-	inline uint32 RookUtils::GetUniqueID() {
+	inline uint32 GetUniqueID() 
+	{
 		return ++CurrentUniqeID;
 	}
 	/**
@@ -41,7 +44,8 @@ public:
 	@param MeshSize
 	@return STC factor
 	*/
-	inline float RookUtils::CalculateSTC( float MeshDepth, float MeshSize ) {
+	inline float CalculateSTC( float MeshDepth, float MeshSize ) 
+	{
 		return 13.4f + 11.4f * ( log10( MeshSize ) ) + 0.0826f * MeshDepth;
 	}
 	/**
@@ -49,7 +53,8 @@ public:
 	@param MeshDepth
 	@return SAC factor
 	*/
-	inline float RookUtils::AvarageSAC( float MeshDepth ) {
+	inline float AvarageSAC( float MeshDepth ) 
+	{
 		return 0.073f + 0.0001f * MeshDepth;
 	}
 	/**
@@ -62,7 +67,8 @@ public:
 	@param dB - decibels in range of 0.0f to -100.0f
 	@return volume value
 	*/
-	inline float RookUtils::DecibelsToVolume( float dB ) {
+	inline float DecibelsToVolume( float dB ) 
+	{
 		return FMath::Pow( 10, dB / 20.0f ) * 100.0f;
 	}
 	/**
@@ -70,7 +76,8 @@ public:
 	@param Volume - in range 0.0f to 100.0f
 	@return decibels
 	*/
-	inline float RookUtils::VolumeToDecibels( float Volume ) {
+	inline float VolumeToDecibels( float Volume ) 
+	{
 		return 20.0f * FMath::LogX( 10.0f, Volume );
 	}
 	/** Cleans data on Utils */

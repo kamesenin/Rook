@@ -10,7 +10,8 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "RookListenerController.generated.h"
 
 UCLASS( ShowCategories = (Mobility), ClassGroup = Audio, Blueprintable )
-class ROOK_API URookListenerController : public UObject, public FTickableGameObject {
+class ROOK_API URookListenerController : public UObject, public FTickableGameObject 
+{
 	GENERATED_BODY()
 public:
 	URookListenerController();
@@ -68,7 +69,7 @@ private:
 	/** Helper boolean. Set to true when Listener Controller is registerd in Rook */
 	bool							bWasRegistered = false;
 	/** Shared Pointer to Rook interface - used to register Listener Controller */
-	TSharedPtr<class IRook>			RookInterface = nullptr;
+	class IRook*					RookInterface = nullptr;
 	/** Helper boolean. Checks if EndPlay deleagate has been added */
 	bool							bHasEndPlayDeleagate = false;
 private:
