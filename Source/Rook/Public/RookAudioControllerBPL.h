@@ -7,7 +7,8 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "RookAudioControllerBPL.generated.h"
 
 UCLASS()
-class ROOK_API URookAudioControllerBPL : public UBlueprintFunctionLibrary {
+class ROOK_API URookAudioControllerBPL : public UBlueprintFunctionLibrary 
+{
 	GENERATED_BODY()
 public:
 	/**

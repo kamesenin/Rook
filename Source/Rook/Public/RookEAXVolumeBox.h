@@ -4,7 +4,8 @@
 #include "RookEAXVolumeBox.generated.h"
 
 UCLASS()
-class ROOK_API ARookEAXVolumeBox : public AActor {
+class ROOK_API ARookEAXVolumeBox : public AActor 
+{
 	GENERATED_UCLASS_BODY()
 public:
 
@@ -28,5 +29,5 @@ private:
 	void					EndOfOverlap( class UPrimitiveComponent* HitComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex );
 private:
 	/** Helper shared pointer to Rook interface */
-	TSharedPtr<class IRook>			RookInterface = nullptr;
+	class IRook*			RookInterface = nullptr;
 };

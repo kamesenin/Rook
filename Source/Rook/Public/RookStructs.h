@@ -9,7 +9,8 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "RookStructs.generated.h"
 /** Rook struct for setting roatation freez. It can freez any axies with given value */
 USTRUCT(BlueprintType)
-struct FFreezRotation {
+struct FFreezRotation 
+{
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Listener" )
@@ -33,7 +34,8 @@ struct FFreezRotation {
 
 /** Rook struct for attaching Listener Controller to a providen socket. Not only proper socket has to be set, but also a proper Character */
 USTRUCT( BlueprintType )
-struct FSocketAttachment {
+struct FSocketAttachment 
+{
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Listener" )
@@ -45,7 +47,8 @@ struct FSocketAttachment {
 
 /** Rook struct for setting mono (3D) audio asset. SurfaceAffectingAudio is optional, however it can be use for ex. dynamic footsteps */
 USTRUCT( BlueprintType )
-struct FMonoAudioModel {
+struct FMonoAudioModel 
+{
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
@@ -60,7 +63,8 @@ struct FMonoAudioModel {
 
 /** Rook struct for setting multichannel (+1) audio asset. Audio gain is in decibels - range from 0 to -100 */
 USTRUCT(BlueprintType)
-struct FMultichannelAudioModel {
+struct FMultichannelAudioModel 
+{
 	GENERATED_USTRUCT_BODY()
 
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
@@ -75,7 +79,8 @@ struct FMultichannelAudioModel {
 
 /** Rook struct for constructing new audio source */
 USTRUCT( BlueprintType )
-struct FAudioSourceModel {
+struct FAudioSourceModel 
+{
 	GENERATED_USTRUCT_BODY()
 
 	/** Audio Bus */
@@ -215,7 +220,8 @@ struct FAudioSourceModel {
 };
 
 USTRUCT( BlueprintType )
-struct FMultichannelFadeModel {
+struct FMultichannelFadeModel 
+{
 	GENERATED_USTRUCT_BODY()
 	/** Helper bool. True if multichannel audio should fade in */
 	UPROPERTY()

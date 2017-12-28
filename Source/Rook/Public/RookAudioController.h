@@ -10,7 +10,8 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "RookAudioController.generated.h"
 
 UCLASS( ShowCategories = ( Mobility ), ClassGroup = Audio, Blueprintable )
-class ROOK_API URookAudioController : public UObject, public FTickableGameObject {
+class ROOK_API URookAudioController : public UObject, public FTickableGameObject 
+{
 	GENERATED_BODY()
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam( FRookDelegate, FName, TagName );
@@ -169,13 +170,15 @@ private:
 	*/
 	void											PerformMultichannelFading( const float DeltaTime );
 	/** Helper function for cleaning unused audio models */
-	void											CheckAndRemoveUnusedModels();
+	void											RemoveUnusedModels( const uint32 IdToRemove );
 	/*
 	* Function is called when an actor begins or ends overlaping of EAX Volume.
 	* @param ActorID - id of overlaping actor, helps determin parent actor of audio controller
 	* @param EAX - which EAX enum has EAX Volume
 	*/
 	void											EAXOverlap( const uint32 ActorID, const EEAX EAX );
+
+	bool											HasSameAudioModel( const FAudioSourceModel& modelToCheck );
 private:
 	/** TMap of current audio models in use. Key is unique id of audio source, value is data model of it */
 	UPROPERTY()
@@ -208,7 +211,7 @@ private:
 	/** Unreal Volume Multiplier. Volume on 3D souds and dB on multichannel will be multiplie by this value */
 	float											ApplicationVolumeMultiplier = 1.0f;
 	/** Shared Pointer to Rook interface - used to get active listeners and check enabled flag */
-	TSharedPtr<class IRook>							RookInterface = nullptr;
+	class IRook*							RookInterface = nullptr;
 	/** Helper boolean. If 3D audio source failed to play, in next tick controller will try it again - it's offten when audio data has not been loaded yet */
 	bool											b3DFailedToPlay = false;
 	/** Helper TMap for checking audio sources which didn't play - it's offten when audio data has not been loaded yet */
@@ -219,9 +222,6 @@ private:
 	/** Helper tmap holding current Unreal Audio Components for fading */
 	UPROPERTY()
 	TMap<TWeakObjectPtr<class UAudioComponent>, FMultichannelFadeModel>			MultichannelFadeHelper;
-	/** Helper array which holdes key for models that will be removed */
-	UPROPERTY()
-	TArray<uint32>									ModelsToRemove;
 	/** Helper for holding a Tag */
 	UPROPERTY()
 	FName											TemporaryTag;
