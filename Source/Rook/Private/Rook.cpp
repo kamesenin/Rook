@@ -14,11 +14,9 @@ IMPLEMENT_MODULE(FRook, Rook);
 
 void FRook::StartupModule() 
 {
-	if (FParse::Param(FCommandLine::Get(), TEXT("TurnOffRook"))) 	
-		bIsRookEnabled = false;
-
-	if (OpenALSoft::Instance().IsDLLLoaded()) 
-		UE_LOG(RookLog, Log, TEXT("OpenAL DLL was Loaded"));	
+	bIsRookEnabled = !(FParse::Param(FCommandLine::Get(), TEXT("TurnOffRook")));
+	
+	if (OpenALSoft::Instance().IsDLLLoaded()) { UE_LOG(RookLog, Log, TEXT("OpenAL DLL was Loaded")); }		
 }
 
 void FRook::ShutdownModule() 

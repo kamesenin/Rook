@@ -6,7 +6,14 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "RookEAXVolumeBox.h"
 #include <Components/BoxComponent.h>
 
-ARookEAXVolumeBox::ARookEAXVolumeBox(const class FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) 
+//TODO:
+//@25.01.19 - exchange physical based detection to InBox detection
+
+ARookEAXVolumeBox::ARookEAXVolumeBox(const class FObjectInitializer& ObjectInitializer) 
+	: Super(ObjectInitializer)
+	, EAXVolumeBox(nullptr)
+	, VolumeEAX(EEAX::None)
+	, RookInterface(nullptr)
 {
 	if (!EAXVolumeBox) 
 	{
@@ -39,14 +46,12 @@ void ARookEAXVolumeBox::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void ARookEAXVolumeBox::OnOverlap(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
 {
-	if (RookInterface)
-		RookInterface->OnEAXOverlap.Broadcast(OtherActor->GetUniqueID(), VolumeEAX);
+	if (RookInterface) { RookInterface->OnEAXOverlap.Broadcast(OtherActor->GetUniqueID(), VolumeEAX); }		
 }
 
 void ARookEAXVolumeBox::EndOfOverlap(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex) 
 {
-	if (RookInterface)
-		RookInterface->OnEAXOverlap.Broadcast(OtherActor->GetUniqueID(), EEAX::None);
+	if (RookInterface) { RookInterface->OnEAXOverlap.Broadcast(OtherActor->GetUniqueID(), EEAX::None); }		
 }
 
 ARookEAXVolumeBox::~ARookEAXVolumeBox()

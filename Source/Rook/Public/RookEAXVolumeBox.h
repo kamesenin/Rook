@@ -6,9 +6,10 @@
 UCLASS()
 class ROOK_API ARookEAXVolumeBox : public AActor 
 {
-	GENERATED_UCLASS_BODY()
+	GENERATED_BODY()
 public:
 
+	ARookEAXVolumeBox(const class FObjectInitializer& ObjectInitializer);
 	virtual ~ARookEAXVolumeBox();
 	virtual void			BeginPlay();
 	virtual void			EndPlay( const EEndPlayReason::Type EndPlayReason );
@@ -16,10 +17,10 @@ public:
 public:
 	/** Box component for volume */
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "Rook EAX" )
-	class UBoxComponent*	EAXVolumeBox = nullptr;
+	class UBoxComponent*	EAXVolumeBox;
 	/** Current EAX on volume */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook EAX" )
-	EEAX					VolumeEAX = EEAX::None;
+	EEAX					VolumeEAX;
 private:
 	/** Function for when Actor is overlaping volume */
 	UFUNCTION()
@@ -29,5 +30,5 @@ private:
 	void					EndOfOverlap( class UPrimitiveComponent* HitComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex );
 private:
 	/** Helper shared pointer to Rook interface */
-	class IRook*			RookInterface = nullptr;
+	class IRook*			RookInterface;
 };

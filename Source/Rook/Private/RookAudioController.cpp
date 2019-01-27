@@ -13,6 +13,17 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "RookAudioDataLoadingTask.h"
 
 URookAudioController::URookAudioController()
+	: bUseDebugSpheres(false)
+	, bPlayOutsideDistanceRange(false)
+	, ActiveListenerController(nullptr)
+	, MaxiumDistanceToListener(0.0f)
+	, DataLoader(nullptr)
+	, CurrentAudioControllerSurafce(EPhysicalSurface::SurfaceType_Default)
+	, CurrentAudioControllerEAX(EEAX::None)
+	, BeginingDecbiles(-100.0f)
+	, ApplicationVolumeMultiplier(1.0f)
+	, RookInterface(nullptr)
+	, b3DFailedToPlay(false)
 {
 	ApplicationVolumeMultiplier = FApp::GetVolumeMultiplier();
 	OpenALSoft::Instance().SetVolumeMulitiplier(ApplicationVolumeMultiplier);
@@ -29,13 +40,16 @@ URookAudioController::URookAudioController()
 bool URookAudioController::IsTickable() const 
 {
 	if (RookInterface)
+	{
 		return RookInterface->bIsRookEnabled;
+	}
+		
 	return true;
 }
 
 TStatId URookAudioController::GetStatId() const 
 {
-	return this->GetStatID();
+	return GetStatID();
 }
 
 void URookAudioController::Tick(float DeltaTime) 
@@ -46,23 +60,20 @@ void URookAudioController::Tick(float DeltaTime)
 		{
 			bool bHasFail = false;
 			
-			for (TPair< uint32, bool >& Kvp : FailedToPlayAudioModel) 
+			for (TPair< uint32, bool >& FailedModel : FailedToPlayAudioModel) 
 			{
-				if (Kvp.Value) 
+				if (FailedModel.Value)
 				{
-					b3DFailedToPlay = !OpenALSoft::Instance().Play(AudioModels[Kvp.Key]);
-					FailedToPlayAudioModel[Kvp.Key] = b3DFailedToPlay;
+					b3DFailedToPlay = !OpenALSoft::Instance().Play(AudioModels[FailedModel.Key]);
+					FailedToPlayAudioModel[FailedModel.Key] = b3DFailedToPlay;
 
-					if (!b3DFailedToPlay)
-						AudioModels[Kvp.Key].AudioState = EAudioState::Playing;
+					if (!b3DFailedToPlay) { AudioModels[FailedModel.Key].AudioState = EAudioState::Playing; }						
 
-					if (b3DFailedToPlay && !bHasFail) 
-						bHasFail = true;					
+					if (b3DFailedToPlay && !bHasFail) { bHasFail = true; }											
 				}
 			}
 
-			if (!bHasFail)
-				FailedToPlayAudioModel.Empty();
+			if (!bHasFail) { FailedToPlayAudioModel.Empty(); }				
 		}
 
 		if (OutOfRangeParents.Num() > 0) 
@@ -83,8 +94,10 @@ void URookAudioController::Tick(float DeltaTime)
 
 				if (ParentsToRemove.Num() > 0) 
 				{
-					for (TWeakObjectPtr<AActor> TemporaryParent : ParentsToRemove) 
+					for (TWeakObjectPtr<AActor> TemporaryParent : ParentsToRemove)
+					{
 						OutOfRangeParents.Remove(TemporaryParent);
+					}						
 					
 					ParentsToRemove.Empty();
 				}
@@ -94,34 +107,32 @@ void URookAudioController::Tick(float DeltaTime)
 
 		if (AudioModels.Num() > 0) 
 		{
-			//for (TPair< uint32, FAudioSourceModel >& Kvp : AudioModels)
-			for(auto& Kvp : AudioModels)
+			for(auto& ModelMap : AudioModels)
 			{
-				if (Kvp.Value.AudioType == EAudioType::is3D) 
-					CheckIfSourceFinishedPlaying(Kvp.Key, DeltaTime);
-				
+				if (ModelMap.Value.AudioType == EAudioType::is3D) { CheckIfSourceFinishedPlaying(ModelMap.Key, DeltaTime); }
+								
 				TWeakObjectPtr<AActor> TemporaryParent;
 
 				for (TObjectIterator<AActor> Itr; Itr; ++Itr) 
 				{
-					if (Itr->GetUniqueID() == Kvp.Value.ParentID) 
+					if (Itr->GetUniqueID() == ModelMap.Value.ParentID)
 					{
 						TemporaryParent = Cast<AActor>(*Itr);
 						break;
 					}
 				}
 
-				PerformMonoFading(Kvp.Key);
+				PerformMonoFading(ModelMap.Key);
 
-				switch (Kvp.Value.AudioState) 
+				switch (ModelMap.Value.AudioState)
 				{
 					case EAudioState::WasPlaying:
-						if (TemporaryParent.IsValid())
-							AfterFinishedPlaying(TemporaryParent, Kvp.Key);
+						if (TemporaryParent.IsValid()) { AfterFinishedPlaying(TemporaryParent, ModelMap.Key); }							
 						break;
 					case EAudioState::Playing:
-						if (TemporaryParent.IsValid() && Kvp.Value.AudioType == EAudioType::is3D)
-							UpdateLocation(TemporaryParent, Kvp.Key);
+						if (TemporaryParent.IsValid() && ModelMap.Value.AudioType == EAudioType::is3D) { UpdateLocation(TemporaryParent, ModelMap.Key); }
+						break;
+					default:
 						break;
 				}
 			}		
@@ -141,17 +152,13 @@ void URookAudioController::RemoveUnusedModels( const uint32 IdToRemove )
 
 void URookAudioController::Play(const TWeakObjectPtr<class AActor> Parent, FName Tag) 
 {
-	if (!RookInterface || (RookInterface && !RookInterface->bIsRookEnabled))
-		return;
+	if (!RookInterface || (RookInterface && !RookInterface->bIsRookEnabled) || HasPlayLimitReached()) { return; }
 	
 	TemporaryTag = Tag;
 	CheckAudioType();
 	
 	if (AudioSourceModel.AudioType == EAudioType::is3D) 
-	{
-		if (HasPlayLimitReached())
-			return;
-		
+	{		
 		GetAudioMaxiumDistance();
 		CheckIfBufferHasAudioData();
 		TemporaryAviableAudioSources.Empty();
@@ -161,7 +168,9 @@ void URookAudioController::Play(const TWeakObjectPtr<class AActor> Parent, FName
 			bool bShouldPlay = true;
 			
 			if (!bPlayOutsideDistanceRange)
+			{
 				bShouldPlay = RookUtils::Instance().InSpehereRadius(Parent->GetActorLocation(), ActiveListenerController->GetListenerLocation(), MaxiumDistanceToListener);
+			}
 
 			if (bShouldPlay) 
 			{
@@ -190,35 +199,34 @@ void URookAudioController::Play(const TWeakObjectPtr<class AActor> Parent, FName
 //TODO: refactor nesting!
 void URookAudioController::Pause() 
 {
-	if (AudioSourceModel.AudioType == EAudioType::is3D) 
+	if (AudioSourceModel.AudioType == EAudioType::is3D && AudioModels.Num() > 0)
 	{
-		if (AudioModels.Num() > 0) 
+		for (TPair< uint32, FAudioSourceModel >& AudioModel : AudioModels)
 		{
-			for (TPair< uint32, FAudioSourceModel >& Kvp : AudioModels) 
+			if (AudioModel.Value.AudioType == EAudioType::is3D)
 			{
-				if (Kvp.Value.AudioType == EAudioType::is3D)
+				switch (AudioModel.Value.AudioState)
 				{
-					if (Kvp.Value.AudioState == EAudioState::Playing)
-					{
-						Kvp.Value.AudioState = EAudioState::Paused;
-						OpenALSoft::Instance().Pause(Kvp.Key);
-					}
-					else if (Kvp.Value.AudioState == EAudioState::Playing)
-					{
-						Kvp.Value.AudioState = EAudioState::Playing;
-						OpenALSoft::Instance().PlayAfterPause(Kvp.Key);
-					}
+				case EAudioState::Playing:					
+					AudioModel.Value.AudioState = EAudioState::Paused;
+					OpenALSoft::Instance().Pause(AudioModel.Key);					
+					break;
+				case EAudioState::Paused:
+					AudioModel.Value.AudioState = EAudioState::Playing;
+					OpenALSoft::Instance().PlayAfterPause(AudioModel.Key);
+					break;
+				default:
+					break;
 				}
 			}
-		}
+		}		
 	}
 	else 
 	{
 		//Yeah, I know, however Unreal Audio Component does not have Pause
 		for (TWeakObjectPtr<UAudioComponent> MultichannelComponent : MultichannelComponents) 
 		{
-			if (MultichannelComponent.IsValid())
-				MultichannelComponent->Stop();
+			if (MultichannelComponent.IsValid()) { MultichannelComponent->Stop(); }				
 		}
 	}
 }
@@ -227,10 +235,12 @@ bool URookAudioController::ShouldUnPause(const uint32 ParentID)
 {
 	if (AudioModels.Num() > 0) 
 	{
-		for (TPair< uint32, FAudioSourceModel >& Kvp : AudioModels) 
+		for (TPair< uint32, FAudioSourceModel >& AudioModel : AudioModels)
 		{
-			if (Kvp.Value.ParentID == ParentID && Kvp.Value.AudioState == EAudioState::Paused) 
-				return true;			
+			if (AudioModel.Value.ParentID == ParentID && AudioModel.Value.AudioState == EAudioState::Paused)
+			{
+				return true;
+			}							
 		}
 	}
 	return false;
@@ -238,29 +248,23 @@ bool URookAudioController::ShouldUnPause(const uint32 ParentID)
 
 void URookAudioController::Stop() 
 {
-	if (AudioSourceModel.AudioType == EAudioType::is3D) 
+	if (AudioSourceModel.AudioType == EAudioType::is3D && AudioModels.Num() > 0)
 	{
-		if (AudioModels.Num() > 0) 
+		for (TPair< uint32, FAudioSourceModel >& AudioModel : AudioModels)
 		{
-			for (TPair< uint32, FAudioSourceModel >& Kvp : AudioModels) 
-			{
-				if (Kvp.Value.AudioType == EAudioType::is3D) 
-					OpenALSoft::Instance().RemoveAudioSource(Kvp.Key);				
-			}
-
-			AudioModels.Empty();
-			AudioModels.Compact();
-			FailedToPlayAudioModel.Empty();
-			FailedToPlayAudioModel.Compact();
-
+			if (AudioModel.Value.AudioType == EAudioType::is3D) { OpenALSoft::Instance().RemoveAudioSource(AudioModel.Key); }
 		}
+
+		AudioModels.Empty();
+		AudioModels.Compact();
+		FailedToPlayAudioModel.Empty();
+		FailedToPlayAudioModel.Compact();		
 	}
 	else 
 	{
 		for (TWeakObjectPtr<UAudioComponent> MultichannelComponent : MultichannelComponents) 
 		{
-			if (MultichannelComponent.IsValid())
-				MultichannelComponent->Stop();
+			if (MultichannelComponent.IsValid()) { MultichannelComponent->Stop(); }				
 		}
 	}
 
@@ -282,16 +286,12 @@ void URookAudioController::ChangeEAX(const EEAX NewEAX)
 {
 	CurrentAudioControllerEAX = NewEAX;
 
-	if (AudioSourceModel.AudioType == EAudioType::is3D) 
-	{
-		if (AudioModels.Num() > 0) 
+	if (AudioSourceModel.AudioType == EAudioType::is3D && AudioModels.Num() > 0)
+	{		
+		for (TPair< uint32, FAudioSourceModel >& AudioModel : AudioModels)
 		{
-			for (TPair< uint32, FAudioSourceModel >& Kvp : AudioModels) 
-			{
-				if (Kvp.Value.AudioType == EAudioType::is3D) 
-					OpenALSoft::Instance().SetEAXOnAudioSource(CurrentAudioControllerEAX, Kvp.Key);				
-			}
-		}
+			if (AudioModel.Value.AudioType == EAudioType::is3D) { OpenALSoft::Instance().SetEAXOnAudioSource(CurrentAudioControllerEAX, AudioModel.Key); }
+		}		
 	}
 	else 
 	{
@@ -314,22 +314,13 @@ void URookAudioController::ChangeDecibelsOnActiveMultichannel(const float Decibe
 
 bool URookAudioController::HasActiveListenerController() 
 {
-	if (!ActiveListenerController.IsValid()) 
-	{
-		GetActiveListenerController();
-	}
-	else
-	{
-		if (!ActiveListenerController->IsActive())
-			GetActiveListenerController();
-	}
+	if (ActiveListenerController.IsValid() == false || ActiveListenerController->IsActive() == false) { GetActiveListenerController(); }
 	return ActiveListenerController.IsValid();
 }
 
 void URookAudioController::GetActiveListenerController() 
 {
-	if (!RookInterface)
-		return;
+	if (!RookInterface) { return; }		
 
 	if (RookInterface->Listeners.Num() > 0)
 	{
@@ -352,8 +343,7 @@ void URookAudioController::GetActiveListenerController()
 
 void URookAudioController::SetUpNewMonoAudio(const TWeakObjectPtr<AActor> Parent) 
 {
-	if (!Parent.IsValid())
-		return;
+	if (!Parent.IsValid()) { return; }		
 	
 	const uint32 TemporaryNewAudioSourceID = RookUtils::Instance().GetUniqueID();
 	AudioSourceModel.AudioSourceID = TemporaryNewAudioSourceID;
@@ -373,23 +363,24 @@ void URookAudioController::SetUpNewMonoAudio(const TWeakObjectPtr<AActor> Parent
 	const FVector ParentLocation = Parent->GetActorLocation();
 	CheckMonoFading();
 
+	AudioSourceModel.AudioSourceGain = 0.0f;
 	if (AudioSourceModel.VolumeOverDistanceCurve) 
 	{
 		const float DistanceToListener = (ParentLocation - ActiveListenerController->GetListenerLocation()).Size();
 		AudioSourceModel.AudioSourceGain = AudioSourceModel.VolumeOverDistanceCurve->GetFloatValue(DistanceToListener) * ApplicationVolumeMultiplier * AudioSourceModel.FadeFactor * 0.01f;
 	}
-	else 
-	{
-		AudioSourceModel.AudioSourceGain = 0.0f;
-	}
 
 	AudioSourceModel.AudioSourceLocation = ParentLocation;
 
-	if (AudioSourceModel.bUseRandomPitch) 
+	if (AudioSourceModel.bUseRandomPitch)
+	{
 		AudioSourceModel.AudioSourceRandomPitch = FMath::FRandRange(AudioSourceModel.BottomRandomPitchValue, AudioSourceModel.TopRandomPitchValue);
+	}
 	
 	if (AudioSourceModel.AudioSourceEAX != CurrentAudioControllerEAX)
+	{
 		AudioSourceModel.AudioSourceEAX = CurrentAudioControllerEAX;
+	}		
 
 	TemporaryAviableAudioSources.Empty();
 	AudioModels.Add(TemporaryNewAudioSourceID, AudioSourceModel);
@@ -414,8 +405,10 @@ void URookAudioController::GetAudioMaxiumDistance()
 {
 	MaxiumDistanceToListener = 0.0f;
 
-	if (AudioSourceModel.VolumeOverDistanceCurve) 	
-		MaxiumDistanceToListener = AudioSourceModel.VolumeOverDistanceCurve->FloatCurve.GetLastKey().Time;	
+	if (AudioSourceModel.VolumeOverDistanceCurve)
+	{
+		MaxiumDistanceToListener = AudioSourceModel.VolumeOverDistanceCurve->FloatCurve.GetLastKey().Time;
+	}
 }
 
 void URookAudioController::CheckIfBufferHasAudioData() 
@@ -444,35 +437,28 @@ void URookAudioController::CheckDataLoader()
 {
 	if (DataLoader == nullptr || !DataLoader.IsValid()) 
 	{
-		TWeakObjectPtr<URookAudioDataLoader> TemporaryDataLoader = nullptr;
+		TWeakObjectPtr<URookAudioDataLoader> TemporaryDataLoader(nullptr);
 		
 		for (TObjectIterator<URookAudioDataLoader> Itr; Itr; ++Itr) 
-			TemporaryDataLoader = Cast<URookAudioDataLoader>(*Itr);		
-
-		if (TemporaryDataLoader == nullptr) 
 		{
-			DataLoader = NewObject<URookAudioDataLoader>();
-		}
-		else 
-		{
-			DataLoader = TemporaryDataLoader;
-		}
-
+			TemporaryDataLoader = Cast<URookAudioDataLoader>(*Itr);
+		}				
+		
+		DataLoader = TemporaryDataLoader == nullptr ? NewObject<URookAudioDataLoader>() : TemporaryDataLoader;
+		
 		TemporaryDataLoader = nullptr;
 	}
 }
 
 TWeakObjectPtr<class USoundWave> URookAudioController::GetMonoAudioSource() 
 {
-	TWeakObjectPtr<class USoundWave> TemporaryAudioAsset = nullptr;
+	TWeakObjectPtr<class USoundWave> TemporaryAudioAsset(nullptr);
 	
 	switch (AudioSourceModel.PlaybackOption)
 	{
 		case EPlayback::Single:
 		case EPlayback::Loop:
-			if (AudioSourceModel.MonoAssets[0].FadeCurve)
-				AudioSourceModel.IndividualFadeCurve = AudioSourceModel.MonoAssets[0].FadeCurve;
-
+			if (AudioSourceModel.MonoAssets[0].FadeCurve) { AudioSourceModel.IndividualFadeCurve = AudioSourceModel.MonoAssets[0].FadeCurve; }
 			TemporaryAudioAsset = TemporaryAviableAudioSources[0];
 			break;
 	
@@ -480,14 +466,20 @@ TWeakObjectPtr<class USoundWave> URookAudioController::GetMonoAudioSource()
 		case EPlayback::SingleRandom:
 			TemporaryAudioAsset = GetRandomAudioSource();
 			if (AudioSourceModel.MonoAssets[RandomIndicis[AudioSourceModel.ParentID]].FadeCurve)
+			{
 				AudioSourceModel.IndividualFadeCurve = AudioSourceModel.MonoAssets[RandomIndicis[AudioSourceModel.ParentID]].FadeCurve;
+			}
 			break;
 		
 		case EPlayback::Sequence:
 		case EPlayback::SingleSequence:
 			TemporaryAudioAsset = GetSequenceAudioSource();
 			if (AudioSourceModel.MonoAssets[SequenceIndicis[AudioSourceModel.ParentID]].FadeCurve)
+			{
 				AudioSourceModel.IndividualFadeCurve = AudioSourceModel.MonoAssets[SequenceIndicis[AudioSourceModel.ParentID]].FadeCurve;
+			}
+			break;
+		default:
 			break;
 	}
 	return TemporaryAudioAsset;
@@ -495,8 +487,7 @@ TWeakObjectPtr<class USoundWave> URookAudioController::GetMonoAudioSource()
 
 TWeakObjectPtr<class USoundWave> URookAudioController::GetRandomAudioSource() 
 {
-	if (!RandomIndicis.Contains(AudioSourceModel.ParentID))
-		RandomIndicis.Add(AudioSourceModel.ParentID, 0);
+	if (!RandomIndicis.Contains(AudioSourceModel.ParentID)) { RandomIndicis.Add(AudioSourceModel.ParentID, 0); }		
 
 	if (TemporaryAviableAudioSources.Num() == 1) 
 	{
@@ -507,8 +498,10 @@ TWeakObjectPtr<class USoundWave> URookAudioController::GetRandomAudioSource()
 	{
 		uint16 TemporaryRandomIndex = FMath::RandRange(0, TemporaryAviableAudioSources.Num() - 1);
 
-		while (TemporaryRandomIndex == RandomIndicis[AudioSourceModel.ParentID]) 
+		while (TemporaryRandomIndex == RandomIndicis[AudioSourceModel.ParentID])
+		{
 			TemporaryRandomIndex = FMath::RandRange(0, TemporaryAviableAudioSources.Num() - 1);
+		}
 		
 		RandomIndicis[AudioSourceModel.ParentID] = TemporaryRandomIndex;
 		return TemporaryAviableAudioSources[RandomIndicis[AudioSourceModel.ParentID]];
@@ -518,16 +511,17 @@ TWeakObjectPtr<class USoundWave> URookAudioController::GetRandomAudioSource()
 
 TWeakObjectPtr<class USoundWave> URookAudioController::GetSequenceAudioSource() 
 {
-	if (!SequenceIndicis.Contains(AudioSourceModel.ParentID))
-		SequenceIndicis.Add(AudioSourceModel.ParentID, 0);
+	if (!SequenceIndicis.Contains(AudioSourceModel.ParentID)) { SequenceIndicis.Add(AudioSourceModel.ParentID, 0); }		
 
 	if (TemporaryAviableAudioSources.Num() > 0) 
 	{
-		TWeakObjectPtr<class USoundWave> TemporarySequenceSource = TemporaryAviableAudioSources[SequenceIndicis[AudioSourceModel.ParentID]];
+		const TWeakObjectPtr<class USoundWave> TemporarySequenceSource(TemporaryAviableAudioSources[SequenceIndicis[AudioSourceModel.ParentID]]);
 		++SequenceIndicis[AudioSourceModel.ParentID];
 		
 		if (SequenceIndicis[AudioSourceModel.ParentID] > TemporaryAviableAudioSources.Num() - 1)
+		{
 			SequenceIndicis[AudioSourceModel.ParentID] = 0;
+		}		
 		
 		return TemporarySequenceSource;
 	}
@@ -536,7 +530,7 @@ TWeakObjectPtr<class USoundWave> URookAudioController::GetSequenceAudioSource()
 
 void URookAudioController::CheckMonoFading() 
 {
-	TWeakObjectPtr<class UCurveVector>	TemporaryVectorFadeCurve = nullptr;
+	TWeakObjectPtr<class UCurveVector>	TemporaryVectorFadeCurve(nullptr);
 	
 	if (AudioSourceModel.IndividualFadeCurve.IsValid())
 	{
@@ -559,25 +553,23 @@ void URookAudioController::CheckMonoFading()
 		{
 			AudioSourceModel.StartFadeOutAt = (AudioSourceModel.CurrentAudioSourceAsset->GetDuration() * AudioSourceModel.AudioSourceRandomPitch) - TemporaryVectorFadeCurve->FloatCurves[1].GetLastKey().Time;
 			
-			if (AudioSourceModel.StartFadeOutAt < 0.0f)
-				AudioSourceModel.StartFadeOutAt = 0.0f;
+			if (AudioSourceModel.StartFadeOutAt < 0.0f) { AudioSourceModel.StartFadeOutAt = 0.0f; }				
 		}
-
-		TemporaryVectorFadeCurve = nullptr;
 	}
 }
 
 bool URookAudioController::HasAudioModelCurrentSurface() 
 {
-	if (TemporaryAviableAudioSources.Num() > 0)
-		return true;
+	if (TemporaryAviableAudioSources.Num() > 0) { return true; }		
 
 	if (AudioSourceModel.MonoAssets.Num() > 0) 
 	{
 		for (FMonoAudioModel MonoAudioModel : AudioSourceModel.MonoAssets) 
 		{
-			if (MonoAudioModel.SurfaceAffectingAudio == CurrentAudioControllerSurafce && MonoAudioModel.AudioAsset) 
-				TemporaryAviableAudioSources.AddUnique(MonoAudioModel.AudioAsset);			
+			if (MonoAudioModel.SurfaceAffectingAudio == CurrentAudioControllerSurafce && MonoAudioModel.AudioAsset)
+			{
+				TemporaryAviableAudioSources.AddUnique(MonoAudioModel.AudioAsset);
+			}						
 		}
 
 		return TemporaryAviableAudioSources.Num() != 0;
@@ -587,108 +579,98 @@ bool URookAudioController::HasAudioModelCurrentSurface()
 
 void URookAudioController::CheckIfSourceFinishedPlaying(const uint32 AudioModelID, const float DeltaTime)
 {
-	if (AudioModels[AudioModelID].AudioState == EAudioState::Playing) 
+
+	if (AudioModels[AudioModelID].AudioState != EAudioState::Playing) { return; }
+	
+	if (AudioModels[AudioModelID].PlaybackOption != EPlayback::Loop) 
 	{
-		if (AudioModels[AudioModelID].PlaybackOption != EPlayback::Loop) 
+		if (OpenALSoft::Instance().AudioSourceState(AudioModels[AudioModelID].AudioSourceID) == EAudioState::Stopped)
 		{
-			if (OpenALSoft::Instance().AudioSourceState(AudioModels[AudioModelID].AudioSourceID) == EAudioState::Stopped)
-				AudioModels[AudioModelID].AudioState = EAudioState::WasPlaying;
+			AudioModels[AudioModelID].AudioState = EAudioState::WasPlaying;
+		}			
+	}
+	else 
+	{
+		if (AudioModels[AudioModelID].OverallTime >= AudioModels[AudioModelID].CurrentAudioSourceAsset->GetDuration()) 
+		{
+			AudioModels[AudioModelID].AudioState = EAudioState::WasPlaying;
+			AudioModels[AudioModelID].OverallTime = 0.0f;
 		}
 		else 
 		{
-			if (AudioModels[AudioModelID].OverallTime >= AudioModels[AudioModelID].CurrentAudioSourceAsset->GetDuration()) 
-			{
-				AudioModels[AudioModelID].AudioState = EAudioState::WasPlaying;
-				AudioModels[AudioModelID].OverallTime = 0.0f;
-			}
-			else 
-			{
-				AudioModels[AudioModelID].OverallTime += DeltaTime;
-			}
+			AudioModels[AudioModelID].OverallTime += DeltaTime;
 		}
-	}
+	}	
 }
 
 void URookAudioController::PerformMonoFading(const uint32 AudioModelID)
 {
-	if (AudioModels[AudioModelID].AudioState != EAudioState::Playing)
-		return;
+	if (AudioModels[AudioModelID].AudioState != EAudioState::Playing) { return; }		
 	
-	TWeakObjectPtr<UCurveVector> TemporaryFadeCurve = nullptr;
+	const TWeakObjectPtr<UCurveVector> TemporaryFadeCurve = AudioModels[AudioModelID].FadeCurve != nullptr ? AudioModels[AudioModelID].FadeCurve : AudioModels[AudioModelID].IndividualFadeCurve;
 	
-	if (AudioModels[AudioModelID].FadeCurve)
-	{
-		TemporaryFadeCurve = AudioModels[AudioModelID].FadeCurve;
-	}
-	else 
-	{
-		TemporaryFadeCurve = AudioModels[AudioModelID].IndividualFadeCurve;
-	}
+	if (TemporaryFadeCurve.IsValid() == false) { return; }
+	
+	const float CurrentPlaybackTime = OpenALSoft::Instance().CurrentPositionOnAudioTrack(AudioModels[AudioModelID].AudioSourceID);
 
-	if (TemporaryFadeCurve.IsValid()) 
+	if (AudioModels[AudioModelID].bFadeIn) 
 	{
-		const float CurrentPlaybackTime = OpenALSoft::Instance().CurrentPositionOnAudioTrack(AudioModels[AudioModelID].AudioSourceID);
-
-		if (AudioModels[AudioModelID].bFadeIn) 
-		{
-			AudioModels[AudioModelID].FadeFactor = TemporaryFadeCurve->GetVectorValue(CurrentPlaybackTime).Y * 0.01f;
+		AudioModels[AudioModelID].FadeFactor = TemporaryFadeCurve->GetVectorValue(CurrentPlaybackTime).Y * 0.01f;
 			
-			if (AudioModels[AudioModelID].FadeFactor >= 0.99f) 
-			{
-				AudioModels[AudioModelID].bFadeIn = false;
-				AudioModels[AudioModelID].FadeFactor = 1.0f;
-			}
-		}
-		else if (CurrentPlaybackTime >= AudioModels[AudioModelID].StartFadeOutAt && AudioModels[AudioModelID].StartFadeOutAt > 0.0f) 
+		if (AudioModels[AudioModelID].FadeFactor >= 0.99f) 
 		{
-			AudioModels[AudioModelID].FadeFactor = TemporaryFadeCurve->GetVectorValue(CurrentPlaybackTime - AudioModels[AudioModelID].StartFadeOutAt).X * 0.01f;
+			AudioModels[AudioModelID].bFadeIn = false;
+			AudioModels[AudioModelID].FadeFactor = 1.0f;
 		}
-
-		TemporaryFadeCurve = nullptr;
 	}
+	else if (CurrentPlaybackTime >= AudioModels[AudioModelID].StartFadeOutAt && AudioModels[AudioModelID].StartFadeOutAt > 0.0f) 
+	{
+		AudioModels[AudioModelID].FadeFactor = TemporaryFadeCurve->GetVectorValue(CurrentPlaybackTime - AudioModels[AudioModelID].StartFadeOutAt).X * 0.01f;
+	}	
 }
 void URookAudioController::PerformMultichannelFading(const float DeltaTime) 
 {
-	for (TPair< TWeakObjectPtr<UAudioComponent>, FMultichannelFadeModel >& Kvp : MultichannelFadeHelper) 
+	for (TPair< TWeakObjectPtr<UAudioComponent>, FMultichannelFadeModel >& MultichannelFade : MultichannelFadeHelper)
 	{
-		Kvp.Value.OverallTime += DeltaTime;
-		float VolumeMultiplier = 0.0f;
+		MultichannelFade.Value.OverallTime += DeltaTime;		
 		bool bApplyFade = false;
 
-		if (Kvp.Value.bFadeIn) 
+		if (MultichannelFade.Value.bFadeIn)
 		{
-			Kvp.Value.FadeFactor = Kvp.Value.FadeCurve->GetVectorValue(Kvp.Value.FadeTime).Y * 0.01f;
+			MultichannelFade.Value.FadeFactor = MultichannelFade.Value.FadeCurve->GetVectorValue(MultichannelFade.Value.FadeTime).Y * 0.01f;
 			bApplyFade = true;
 
-			if (Kvp.Value.FadeFactor >= 0.99f) 
+			if (MultichannelFade.Value.FadeFactor >= 0.99f)
 			{
-				Kvp.Value.bFadeIn = false;
-				Kvp.Value.FadeFactor = 1.0f;
-				Kvp.Value.FadeTime = 0.0f;
+				MultichannelFade.Value.bFadeIn = false;
+				MultichannelFade.Value.FadeFactor = 1.0f;
+				MultichannelFade.Value.FadeTime = 0.0f;
 			}
 
 		}
-		else if (Kvp.Value.OverallTime >= Kvp.Value.StartFadeOutAt && Kvp.Value.StartFadeOutAt > 0.0f) 
+		else if (MultichannelFade.Value.OverallTime >= MultichannelFade.Value.StartFadeOutAt && MultichannelFade.Value.StartFadeOutAt > 0.0f)
 		{
-			Kvp.Value.FadeFactor = Kvp.Value.FadeCurve->GetVectorValue(Kvp.Value.FadeTime).X * 0.01f;
+			MultichannelFade.Value.FadeFactor = MultichannelFade.Value.FadeCurve->GetVectorValue(MultichannelFade.Value.FadeTime).X * 0.01f;
 			bApplyFade = true;
 		}
 
-		if (bApplyFade && Kvp.Key.IsValid()) 
+		if (bApplyFade && MultichannelFade.Key.IsValid())
 		{
-			VolumeMultiplier = Kvp.Value.InternalVolume * Kvp.Value.FadeFactor;
-			Kvp.Key->SetVolumeMultiplier(VolumeMultiplier);
-			Kvp.Value.FadeTime += DeltaTime;
+			const float VolumeMultiplier = MultichannelFade.Value.InternalVolume * MultichannelFade.Value.FadeFactor;
+			MultichannelFade.Key->SetVolumeMultiplier(VolumeMultiplier);
+			MultichannelFade.Value.FadeTime += DeltaTime;
 		}
 	}
 }
 
 void URookAudioController::AfterFinishedPlaying(const TWeakObjectPtr<AActor> Parent, const uint32 AudioModelID)
 {
-	EPlayback LastPlaybackOption = AudioModels[AudioModelID].PlaybackOption;
+	const EPlayback LastPlaybackOption = AudioModels[AudioModelID].PlaybackOption;
 	
 	if (AudioModels[AudioModelID].AudioType == EAudioType::is3D)
+	{
 		OpenALSoft::Instance().RemoveAudioSource(AudioModels[AudioModelID].AudioSourceID);
+	}		
 	
 	FinishPlaying.Broadcast(AudioModels[AudioModelID].Tag);
 
@@ -714,8 +696,7 @@ void URookAudioController::AfterFinishedPlaying(const TWeakObjectPtr<AActor> Par
 	}
 	RemoveUnusedModels(AudioModelID);
 
-	if(bShouldPlay)
-		Play(Parent);
+	if(bShouldPlay) { Play(Parent); }		
 }
 
 void URookAudioController::UpdateLocation(const TWeakObjectPtr<AActor> Parent, const uint32  AudioModelID) 
@@ -726,7 +707,9 @@ void URookAudioController::UpdateLocation(const TWeakObjectPtr<AActor> Parent, c
 		OpenALSoft::Instance().UpdateAudioSourcePosition(AudioModels[AudioModelID].AudioSourceID, Parent->GetActorLocation());
 
 		if (AudioModels[AudioModelID].bUseVelocity)
+		{
 			OpenALSoft::Instance().UpdateAudioSourceVelocity(AudioModels[AudioModelID].AudioSourceID, Parent->GetVelocity());
+		}
 	}
 
 	if (AudioModels[AudioModelID].bUseRaytrace) 
@@ -822,14 +805,14 @@ void URookAudioController::UpdateLocation(const TWeakObjectPtr<AActor> Parent, c
 
 void URookAudioController::RaytraceToListener(const TWeakObjectPtr<AActor> Parent, const uint32 AudioSourceID) 
 {
-	FVector StartPosition = Parent->GetActorLocation();
-	FVector EndPosition = ActiveListenerController->GetListenerLocation();
+	const FVector StartPosition = Parent->GetActorLocation();
+	const FVector EndPosition = ActiveListenerController->GetListenerLocation();
 	FHitResult Hit;
 	UWorld* TemporaryWorld = RookUtils::Instance().GetWorld();
 #if WITH_EDITOR
 	TemporaryWorld = RookUtils::Instance().GetWorld(EWorldType::PIE);
 #endif
-	AActor* PreRayedActor = nullptr;
+	AActor* PreRayedActor(nullptr);
 	FCollisionQueryParams TraceParams(TEXT("RayTrace"), true, Parent.Get());
 	TraceParams.bReturnPhysicalMaterial = true;
 
@@ -867,8 +850,7 @@ void URookAudioController::RaytraceToListener(const TWeakObjectPtr<AActor> Paren
 
 	float TargetFilterGain = 1.0f - STC / 100;
 	
-	if (TargetFilterGain < 0.0f) 
-		TargetFilterGain = 0.0f;
+	if (TargetFilterGain < 0.0f) { TargetFilterGain = 0.0f; }		
 	
 	OpenALSoft::Instance().ChangeAudioSourceGain(AudioSourceID, AudioAlterGain);
 	OpenALSoft::Instance().ChangeLowpassFilter(AudioSourceID, TargetFilterGain, TargetFilterGain);
@@ -905,10 +887,9 @@ bool URookAudioController::HasPlayLimitReached()
 	
 	if (AudioModels.Num() > 0) 
 	{
-		for (TPair< uint32, FAudioSourceModel >& Kvp : AudioModels) 
+		for (TPair< uint32, FAudioSourceModel >& AudioModel : AudioModels)
 		{
-			if (Kvp.Value.AudioState == EAudioState::Playing)
-				++TemporaryLimit;
+			if (AudioModel.Value.AudioState == EAudioState::Playing) { ++TemporaryLimit; }				
 		}
 	}
 	return TemporaryLimit >= AudioSourceModel.PlayLimit;
@@ -916,71 +897,67 @@ bool URookAudioController::HasPlayLimitReached()
 
 void URookAudioController::SetUpMultichannelSource(const TWeakObjectPtr<class AActor> Parent) 
 {
-	if (!Parent.IsValid())
-		return;
+	if (!Parent.IsValid()) { return; }		
 	
 	AudioSourceModel.ParentID = Parent->GetUniqueID();
-	const TWeakObjectPtr<class USoundWave> TemporaryAsset = GetMultichannelAudioSource();
+	const TWeakObjectPtr<class USoundWave> TemporaryAsset(GetMultichannelAudioSource());
 	AudioSourceModel.CurrentAudioSourceAsset = TemporaryAsset;
 	TemporaryAviableAudioSources.Empty();
 
-	if (TemporaryAsset.IsValid()) 
+	if (TemporaryAsset.IsValid() == false) { return; }
+	
+	if (TemporaryAsset->NumChannels == 1) 
 	{
-		if (TemporaryAsset->NumChannels == 1) 
-		{
-			UE_LOG(RookLog, Warning, TEXT("While trying to Play Multichannel audio asset %s was Mono. Will not play"), *TemporaryAsset->GetName());
-			return;
-		}
-		
-		TWeakObjectPtr<UAudioComponent> TemporaryAudioComp = NewObject<UAudioComponent>(Parent.Get());
-		TemporaryAudioComp->OnAudioFinishedNative.AddUObject(this, &URookAudioController::MultichannelFinishedPlaying);
-		TemporaryAudioComp->SetSound(TemporaryAsset.Get());
-
-		TemporaryAudioComp->ComponentTags.Add(TemporaryTag);
-
-		if (AudioSourceModel.bUseRandomPitch) 
-		{
-			TemporaryAudioComp->PitchModulationMin = AudioSourceModel.BottomRandomPitchValue;
-			TemporaryAudioComp->PitchModulationMax = AudioSourceModel.TopRandomPitchValue;
-		}
-
-		if (AudioSourceModel.AudioSourceEAX != EEAX::None) 
-		{
-			TemporaryAudioComp->bReverb = true;
-			RookUtils::Instance().SetReverbInUnreal(AudioSourceModel.AudioSourceEAX);
-		}
-
-		CheckMultichannelFading(TemporaryAudioComp);
-
-		float TemporaryVolume = 1.0f;
-		
-		if (MultichannelFadeHelper.Contains(TemporaryAudioComp)) 
-		{
-			TemporaryVolume = 0.0f;
-			MultichannelFadeHelper[TemporaryAudioComp].InternalVolume = RookUtils::Instance().DecibelsToVolume(BeginingDecbiles) * ApplicationVolumeMultiplier * 0.01f;
-		}
-		else 
-		{
-			TemporaryVolume = RookUtils::Instance().DecibelsToVolume(BeginingDecbiles) * ApplicationVolumeMultiplier * 0.01f;
-		}
-
-		TemporaryAudioComp->SetVolumeMultiplier(TemporaryVolume);
-		TemporaryAudioComp->Play();
-		MultichannelComponents.Add(TemporaryAudioComp);
-		TemporaryAudioComp = nullptr;
-		AudioSourceModel.IndividualFadeCurve = nullptr;
+		UE_LOG(RookLog, Warning, TEXT("While trying to Play Multichannel audio asset %s was Mono. Will not play"), *TemporaryAsset->GetName());
+		return;
 	}
+		
+	TWeakObjectPtr<UAudioComponent> NewAudioComp = NewObject<UAudioComponent>(Parent.Get());
+	NewAudioComp->OnAudioFinishedNative.AddUObject(this, &URookAudioController::MultichannelFinishedPlaying);
+	NewAudioComp->SetSound(TemporaryAsset.Get());
+
+	NewAudioComp->ComponentTags.Add(TemporaryTag);
+
+	if (AudioSourceModel.bUseRandomPitch) 
+	{
+		NewAudioComp->PitchModulationMin = AudioSourceModel.BottomRandomPitchValue;
+		NewAudioComp->PitchModulationMax = AudioSourceModel.TopRandomPitchValue;
+	}
+
+	if (AudioSourceModel.AudioSourceEAX != EEAX::None) 
+	{
+		NewAudioComp->bReverb = true;
+		RookUtils::Instance().SetReverbInUnreal(AudioSourceModel.AudioSourceEAX);
+	}
+
+	CheckMultichannelFading(NewAudioComp);
+
+	float TemporaryVolume = 1.0f;
+		
+	if (MultichannelFadeHelper.Contains(NewAudioComp))
+	{
+		TemporaryVolume = 0.0f;
+		MultichannelFadeHelper[NewAudioComp].InternalVolume = RookUtils::Instance().DecibelsToVolume(BeginingDecbiles) * ApplicationVolumeMultiplier * 0.01f;
+	}
+	else 
+	{
+		TemporaryVolume = RookUtils::Instance().DecibelsToVolume(BeginingDecbiles) * ApplicationVolumeMultiplier * 0.01f;
+	}
+
+	NewAudioComp->SetVolumeMultiplier(TemporaryVolume);
+	NewAudioComp->Play();
+	MultichannelComponents.Add(NewAudioComp);
+	AudioSourceModel.IndividualFadeCurve = nullptr;	
 }
 
 TWeakObjectPtr<class USoundWave> URookAudioController::GetMultichannelAudioSource() 
 {
 	for (FMultichannelAudioModel MultichannelAudioModel : AudioSourceModel.MultiChannelAssets) 
 	{
-		if (MultichannelAudioModel.AudioAsset)
-			TemporaryAviableAudioSources.AddUnique(MultichannelAudioModel.AudioAsset);
+		if (MultichannelAudioModel.AudioAsset) { TemporaryAviableAudioSources.AddUnique(MultichannelAudioModel.AudioAsset); }			
 	}
 	
-	TWeakObjectPtr<class USoundWave> TemporaryMultichannelAudioAsset = nullptr;
+	TWeakObjectPtr<class USoundWave> TemporaryMultichannelAudioAsset(nullptr);
 	BeginingDecbiles = -100.0f;
 	
 	switch (AudioSourceModel.PlaybackOption) 
@@ -990,21 +967,27 @@ TWeakObjectPtr<class USoundWave> URookAudioController::GetMultichannelAudioSourc
 			TemporaryMultichannelAudioAsset = AudioSourceModel.MultiChannelAssets[0].AudioAsset;
 			BeginingDecbiles = AudioSourceModel.MultiChannelAssets[0].Decibels;
 			if (AudioSourceModel.MultiChannelAssets[0].FadeCurve)
+			{
 				AudioSourceModel.IndividualFadeCurve = AudioSourceModel.MultiChannelAssets[0].FadeCurve;
+			}				
 			break;
 		case EPlayback::Random:
 		case EPlayback::SingleRandom:
 			TemporaryMultichannelAudioAsset = GetRandomAudioSource();
 			BeginingDecbiles = AudioSourceModel.MultiChannelAssets[RandomIndicis[AudioSourceModel.ParentID]].Decibels;
 			if (AudioSourceModel.MultiChannelAssets[RandomIndicis[AudioSourceModel.ParentID]].FadeCurve)
+			{
 				AudioSourceModel.IndividualFadeCurve = AudioSourceModel.MultiChannelAssets[RandomIndicis[AudioSourceModel.ParentID]].FadeCurve;
+			}
 			break;
 		case EPlayback::Sequence:
 		case EPlayback::SingleSequence:
 			TemporaryMultichannelAudioAsset = GetSequenceAudioSource();
 			BeginingDecbiles = AudioSourceModel.MultiChannelAssets[SequenceIndicis[AudioSourceModel.ParentID]].Decibels;
 			if (AudioSourceModel.MultiChannelAssets[SequenceIndicis[AudioSourceModel.ParentID]].FadeCurve)
+			{
 				AudioSourceModel.IndividualFadeCurve = AudioSourceModel.MultiChannelAssets[SequenceIndicis[AudioSourceModel.ParentID]].FadeCurve;
+			}
 			break;
 	}
 	return TemporaryMultichannelAudioAsset;
@@ -1012,7 +995,7 @@ TWeakObjectPtr<class USoundWave> URookAudioController::GetMultichannelAudioSourc
 
 void URookAudioController::CheckMultichannelFading(const TWeakObjectPtr<class UAudioComponent> UnrealAudioComponent) 
 {
-	TWeakObjectPtr<class UCurveVector>	TemporaryVectorFadeCurve = nullptr;
+	TWeakObjectPtr<class UCurveVector>	TemporaryVectorFadeCurve(nullptr);
 	
 	if (AudioSourceModel.IndividualFadeCurve.IsValid()) 
 	{
@@ -1038,18 +1021,16 @@ void URookAudioController::CheckMultichannelFading(const TWeakObjectPtr<class UA
 		{
 			FadeModel.StartFadeOutAt = (AudioSourceModel.CurrentAudioSourceAsset->GetDuration() * UnrealAudioComponent->PitchMultiplier) - TemporaryVectorFadeCurve->FloatCurves[1].GetLastKey().Time;
 			
-			if (FadeModel.StartFadeOutAt < 0.0f)
-				FadeModel.StartFadeOutAt = 0.0f;
+			if (FadeModel.StartFadeOutAt < 0.0f) { FadeModel.StartFadeOutAt = 0.0f; }				
 		}
 		FadeModel.FadeCurve = TemporaryVectorFadeCurve;
 		MultichannelFadeHelper.Add(UnrealAudioComponent, FadeModel);
-		TemporaryVectorFadeCurve = nullptr;
 	}
 }
 
 void URookAudioController::MultichannelFinishedPlaying(UAudioComponent* UnrealAudioComponent) 
 {
-	const TWeakObjectPtr<AActor> Parent = Cast<AActor>(UnrealAudioComponent->GetOuter());
+	const TWeakObjectPtr<AActor> Parent(Cast<AActor>(UnrealAudioComponent->GetOuter()));
 	MultichannelComponents.Remove(UnrealAudioComponent);
 	MultichannelFadeHelper.Remove(UnrealAudioComponent);
 	MultichannelFadeHelper.Compact();
@@ -1080,13 +1061,13 @@ void URookAudioController::OnEndPlay()
 
 void URookAudioController::EAXOverlap(const uint32 ActorID, const EEAX EAX) 
 {
-	for (TPair< uint32, FAudioSourceModel >& Kvp : AudioModels) 
+	for (TPair< uint32, FAudioSourceModel >& AudioModel : AudioModels)
 	{
-		if (Kvp.Value.ParentID == ActorID) 
+		if (AudioModel.Value.ParentID == ActorID)
 		{
-			if (Kvp.Value.AudioType == EAudioType::is3D) 
+			if (AudioModel.Value.AudioType == EAudioType::is3D)
 			{
-				OpenALSoft::Instance().SetEAXOnAudioSource(EAX, Kvp.Key);
+				OpenALSoft::Instance().SetEAXOnAudioSource(EAX, AudioModel.Key);
 			}
 			else 
 			{
@@ -1099,7 +1080,6 @@ void URookAudioController::EAXOverlap(const uint32 ActorID, const EEAX EAX)
 
 bool URookAudioController::HasSameAudioModel( const FAudioSourceModel& modelToCheck )
 {
-
 	return false;
 }
 
@@ -1107,8 +1087,10 @@ URookAudioController::~URookAudioController()
 {
 	if (AudioModels.Num() > 0) 
 	{
-		for (TPair< uint32, FAudioSourceModel >& Kvp : AudioModels) 
-			OpenALSoft::Instance().RemoveAudioSource(Kvp.Key);
+		for (TPair< uint32, FAudioSourceModel >& AudioModel : AudioModels)
+		{
+			OpenALSoft::Instance().RemoveAudioSource(AudioModel.Key);
+		}			
 		
 		AudioModels.Empty();
 	}
@@ -1117,8 +1099,7 @@ URookAudioController::~URookAudioController()
 	{
 		for (TWeakObjectPtr<UAudioComponent> UnrealAudioComponent : MultichannelComponents) 
 		{
-			if (UnrealAudioComponent.IsValid())
-				UnrealAudioComponent->ConditionalBeginDestroy();
+			if (UnrealAudioComponent.IsValid()) { UnrealAudioComponent->ConditionalBeginDestroy(); }				
 		}
 		MultichannelComponents.Empty();
 	}

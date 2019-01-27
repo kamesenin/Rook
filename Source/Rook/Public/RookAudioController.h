@@ -9,12 +9,13 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "RookStructs.h"
 #include "RookAudioController.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FRookDelegate, FName, TagName);
+
 UCLASS( ShowCategories = ( Mobility ), ClassGroup = Audio, Blueprintable )
 class ROOK_API URookAudioController : public UObject, public FTickableGameObject 
 {
 	GENERATED_BODY()
-
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam( FRookDelegate, FName, TagName );
+	
 public:
 	URookAudioController();
 	virtual ~URookAudioController();
@@ -45,10 +46,10 @@ public:
 	FAudioSourceModel								AudioSourceModel;
 	/** Helper boolean for showing debug sphere. Blue is for audio gain, yellow for lowpass, green for bandpass */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	bool											bUseDebugSpheres = false;
+	bool											bUseDebugSpheres;
 	/** Helper boolean. If set to true audio will play even though its outside distance sphere */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Audio" )
-	bool											bPlayOutsideDistanceRange = false;
+	bool											bPlayOutsideDistanceRange;
 	/** Delegate on playback finish */
 	UPROPERTY( BlueprintAssignable, Category = "Rook Audio" )
 	FRookDelegate									FinishPlaying;
@@ -185,35 +186,35 @@ private:
 	TMap<uint32, FAudioSourceModel>					AudioModels;
 	/** Weak pointer to current active listener controller */
 	UPROPERTY()
-	TWeakObjectPtr<class URookListenerController>	ActiveListenerController = nullptr;
+	TWeakObjectPtr<class URookListenerController>	ActiveListenerController;
 	/** Maxiumu distance from source to listener based on volume float curve */
-	float											MaxiumDistanceToListener = 0.0f;	
+	float											MaxiumDistanceToListener;	
 	/** Weak pointer to data loader. Helps while we need to load new asset data */
 	UPROPERTY()
-	TWeakObjectPtr<class URookAudioDataLoader>		DataLoader = nullptr;
+	TWeakObjectPtr<class URookAudioDataLoader>		DataLoader;
 	/** Helper to track last random audio source. Key is parent Actor ID ,value is last index */
 	TMap<uint32, uint16>							RandomIndicis;
 	/** Helper to track last sequence audio source. Key is parent Actor ID ,value is last index */	
 	TMap<uint32, uint16>							SequenceIndicis;
 	/** Current physical surface. Its Unreal enum */
 	UPROPERTY()
-	TEnumAsByte<EPhysicalSurface>					CurrentAudioControllerSurafce = EPhysicalSurface::SurfaceType_Default;
+	TEnumAsByte<EPhysicalSurface>					CurrentAudioControllerSurafce;
 	/** Current EAX enum */
 	UPROPERTY()
-	EEAX											CurrentAudioControllerEAX = EEAX::None;
+	EEAX											CurrentAudioControllerEAX;
 	/** Helper temporary array of audio assets. Used while setting new audio source */
 	TArray<TWeakObjectPtr<class USoundWave>>		TemporaryAviableAudioSources;
 	/** Helper value for holding desbiles of multichannel at startup */
-	float											BeginingDecbiles = -100.0f;
+	float											BeginingDecbiles;
 	/** Array holding current multichannel Unreal Audio Components. */
 	UPROPERTY()
 	TArray<TWeakObjectPtr<class UAudioComponent>>	MultichannelComponents;
 	/** Unreal Volume Multiplier. Volume on 3D souds and dB on multichannel will be multiplie by this value */
-	float											ApplicationVolumeMultiplier = 1.0f;
+	float											ApplicationVolumeMultiplier;
 	/** Shared Pointer to Rook interface - used to get active listeners and check enabled flag */
-	class IRook*							RookInterface = nullptr;
+	class IRook*									RookInterface;
 	/** Helper boolean. If 3D audio source failed to play, in next tick controller will try it again - it's offten when audio data has not been loaded yet */
-	bool											b3DFailedToPlay = false;
+	bool											b3DFailedToPlay;
 	/** Helper TMap for checking audio sources which didn't play - it's offten when audio data has not been loaded yet */
 	UPROPERTY()
 	TMap<uint32, bool>								FailedToPlayAudioModel;

@@ -5,13 +5,14 @@ namespace UnrealBuildTool.Rules
 {
     public class Rook : ModuleRules
     {
-        public Rook(ReadOnlyTargetRules target) : base(target)
+        public Rook(ReadOnlyTargetRules Target) : base(Target)
         {
+            PrivatePCHHeaderFile = "Private/RookPrivatePCH.h";
             PrivateIncludePaths.AddRange(new string[] { "Rook/Private" });
 
             PublicIncludePaths.AddRange(
                 new string[] {
-                    "Rook/Public",
+                    Path.Combine( ModulePath, "Public") ,
                     Path.Combine( OpenALSoftPath, "include" )
                 }
             );
@@ -25,7 +26,7 @@ namespace UnrealBuildTool.Rules
                 }
             );
 
-            if (UEBuildConfiguration.bBuildEditor == true)
+            if (Target.bBuildEditor == true)
             {
                 PublicDependencyModuleNames.AddRange(
                     new string[] {

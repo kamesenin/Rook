@@ -255,156 +255,90 @@ public:
 	bool						IsDLLLoaded() const;
 public:
 	/** Was audio device was set up proper */
-	bool						bHasDeviceBeenSet = false;
+	bool						bHasDeviceBeenSet;
 	/** Current number of audio sources in use */
-	uint16						CurrentLiveSourceCount = 0;
+	uint16						CurrentLiveSourceCount;
 	/** Maximum number of 3D audio source that can play in one tick */
-	uint16						MaximumAvailableAudioChannels = 0;
+	uint16						MaximumAvailableAudioChannels;
 	/** Helper boolean. True if audio source pool is empty */
-	bool						bHasReachPlayLimit = false;
+	bool						bHasReachPlayLimit;
 	/** Buffer tmap. Key is audio asset unique id, value is OpenAL Soft data */
 	TMap< uint32, ALuint >		Buffers;
 	/** OpenAL Soft buffer generator */
-	DefAlGenBuffers				OALGenBuffers = nullptr;
+	DefAlGenBuffers				OALGenBuffers;
 	/** OpenAL Soft buffer data generator */
-	DefAlBufferData				OALBufferData = nullptr;
+	DefAlBufferData				OALBufferData;
 private:
 	//////////////////////////////////////////////////////////////////////////
 	//DLL
 	//////////////////////////////////////////////////////////////////////////
-	
-	FString							ErrorName = "alGetError";
-	FString							EnableName = "alEnable";
-	
-	FString							OpenDeviceName = "alcOpenDevice";
-	FString							CloseDeviceName = "alcCloseDevice";
-	FString							CreateContextName = "alcCreateContext";
-	FString							DestroyContextName = "alcDestroyContext";
-	FString							MakeContextCurrentName = "alcMakeContextCurrent";
-
-	FString							GenBuffersName = "alGenBuffers";
-	FString							DeleteBuffersName = "alDeleteBuffers";
-	FString							BufferName = "alBufferData";
-	
-	FString							Listener3fName = "alListener3f";
-	FString							ListenerfvName = "alListenerfv";
-	
-	FString							GenSourcesName = "alGenSources";
-	FString							DeleteSourcesName = "alDeleteSources";
-	FString							Soruce3fName = "alSource3f";
-	FString							SorucefName = "alSourcef";
-	FString							SoruceivName = "alSourceiv";
-	FString							SoruceiName = "alSourcei";
-	FString							Soruce3iName = "alSource3i";
-	FString							SorucePlayName = "alSourcePlay";
-	FString							SoruceStopName = "alSourceStop";
-	FString							SorucePauseName = "alSourcePause";
-	FString							IsSourceName = "alIsSource";
-
-	FString							IsExtensionPresentName = "alIsExtensionPresent";
-	FString							IsAlcExtensionPresentName = "alcIsExtensionPresent";
-
-	FString							GetStringName = "alcGetString";
-	FString							GetIntegervName = "alcGetIntegerv";
-	FString							GetSourceiName = "alGetSourcei";
-	FString							GetSourcefName = "alGetSourcef";
-	FString							GetEnumValueName = "alGetEnumValue";
-	
-	FString							HrtfName = "alcDeviceEnableHrtf";
-	
-	FString							GenEffectName = "alGenEffects";
-	FString							DeleteEffectName = "alDeleteEffects";
-	FString							IsEffectName = "alIsEffect";
-	FString							AlGenAuxiliaryEffectSlotsName = "alGenAuxiliaryEffectSlots";
-	FString							DeleteAuxiliaryEffectSlotsName = "alDeleteAuxiliaryEffectSlots";
-	FString							IsAuxiliaryEffectSlotName = "alIsAuxiliaryEffectSlot";
-	FString							AuxiliaryEffectSlotiName = "alAuxiliaryEffectSloti";
-
-	FString							EffectiName = "alEffecti";
-	FString							EffectivName = "alEffectiv";
-	FString							EffectfName = "alEffectf";
-	FString							EffectfvName = "alEffectfv";
-
-	FString							GenFiltersName = "alGenFilters";
-	FString							DeleteFiltersName = "alDeleteFilters";
-	FString							FilteriName = "alFilteri";
-	FString							FilterivName = "alFilteriv";
-	FString							FilterfName = "alFilterf";
-	FString							FilterfvName = "alFilterfv";
-	
-	FString							DopplerFactorName = "alDopplerFactor";
-	FString							DopplerVelocityName = "alDopplerVelocity";
-
-	FString							DistanceModelName = "alDistanceModel";
-	FString							SoruceDistanceModelName = "alSourceDistanceModel";
-	
+		
 	void							ProcessDLL();	
 	void							FreeOpenALDll();
-	FString							PathToLibrary;
 	void*							OALDLLHandler;
-	bool							bWasDllLoaded = false;
+	bool							bWasDllLoaded;
 	
-	DefAlGetError					OALGetError = nullptr;
-	DefAlEnable						OALEnable = nullptr;
+	DefAlGetError					OALGetError;
+	DefAlEnable						OALEnable;
 
-	DefAlcOpenDevice				OALOpenDevice = nullptr;
-	DefAlcCloseDevice				OALCloseDevice = nullptr;
-	DefAlcCreateContext				OALCreateContext = nullptr;
-	DefAlcDestroyContext			OALDestroyContext = nullptr;
-	DefAlcMakeContextCurrent		OALMakeContextCurrent = nullptr;
+	DefAlcOpenDevice				OALOpenDevice;
+	DefAlcCloseDevice				OALCloseDevice;
+	DefAlcCreateContext				OALCreateContext;
+	DefAlcDestroyContext			OALDestroyContext;
+	DefAlcMakeContextCurrent		OALMakeContextCurrent;
 		
-	DefAlDeleteBuffers				OALDeleteBuffers = nullptr;
+	DefAlDeleteBuffers				OALDeleteBuffers;
 
-	DefAlListener3f					OALListener3f = nullptr;
-	DefAlListenerfv					OALListenerfv = nullptr;
+	DefAlListener3f					OALListener3f;
+	DefAlListenerfv					OALListenerfv;
 
-	DefAlGenSources					OALGenSources = nullptr;
-	DefAlDeleteSources				OALDeleteSoruces = nullptr;
-	DefAlSource3f					OALSource3f = nullptr;
-	DefAlSourcef					OALSourcef = nullptr;
-	DefAlSourcei					OALSourcei = nullptr;
-	DefAlSourceiv					OALSourceiv = nullptr;
-	DefAlSource3i					OALSource3i = nullptr;
-	DefAlSourcePlay					OALSourcePlay = nullptr;
-	DefAlSourceStop					OALSourceStop = nullptr;
-	DefAlSourcePause				OALSourcePause = nullptr;
-	DefAlIsSource					OALIsSource = nullptr;
+	DefAlGenSources					OALGenSources;
+	DefAlDeleteSources				OALDeleteSoruces;
+	DefAlSource3f					OALSource3f;
+	DefAlSourcef					OALSourcef;
+	DefAlSourcei					OALSourcei;
+	DefAlSourceiv					OALSourceiv;
+	DefAlSource3i					OALSource3i;
+	DefAlSourcePlay					OALSourcePlay;
+	DefAlSourceStop					OALSourceStop;
+	DefAlSourcePause				OALSourcePause;
+	DefAlIsSource					OALIsSource;
 
-	DefAlIsExtensionPresent			OALIsExtensionPresent = nullptr;
-	DefAlcIsExtensionPresent		OALIsAlcExtensionPresent = nullptr;
+	DefAlIsExtensionPresent			OALIsExtensionPresent;
+	DefAlcIsExtensionPresent		OALIsAlcExtensionPresent;
 
-	DefAlcGetString					OALGetString = nullptr;
-	DefAlcGetIntegerv				OALGetIntegerv = nullptr;
-	DefAlGetSourcei					OALGetSourcei = nullptr;
-	DefAlGetSourcef					OALGetSourcef = nullptr;
-	DefAlGetEnumValue				OALGetEnumValue = nullptr;
+	DefAlcGetString					OALGetString;
+	DefAlcGetIntegerv				OALGetIntegerv;
+	DefAlGetSourcei					OALGetSourcei;
+	DefAlGetSourcef					OALGetSourcef;
+	DefAlGetEnumValue				OALGetEnumValue;
 
-	DefAlcDeviceEnableHrtf			OALEnableHrtf = nullptr;
+	DefAlcDeviceEnableHrtf			OALEnableHrtf;
 
-	DefAlGenEffects					OALGenEffects = nullptr;
-	DefAlDeleteEffects				OALDeleteEffects = nullptr;
-	DefAlIsEffect					OALIsEffect = nullptr;
-	DefAlGenAuxiliaryEffectSlots	OALGenAuxiliaryEffectSlot = nullptr;
-	DefAlDeleteAuxiliaryEffectSlots	OALDeleteAuxiliaryEffectSlot = nullptr;
-	DefAlIsAuxiliaryEffectSlot		OALIsAuxiliaryEffectSlot = nullptr;
-	DefAlAuxiliaryEffectSloti		OALAuxiliaryEffectSloti = nullptr;
+	DefAlGenEffects					OALGenEffects;
+	DefAlDeleteEffects				OALDeleteEffects;
+	DefAlIsEffect					OALIsEffect;
+	DefAlGenAuxiliaryEffectSlots	OALGenAuxiliaryEffectSlot;
+	DefAlDeleteAuxiliaryEffectSlots	OALDeleteAuxiliaryEffectSlot;
+	DefAlIsAuxiliaryEffectSlot		OALIsAuxiliaryEffectSlot;
+	DefAlAuxiliaryEffectSloti		OALAuxiliaryEffectSloti;
 
-	DefAlEffecti					OALEffecti = nullptr;
-	DefAlEffectiv					OALEffectiv = nullptr;
-	DefAlEffectf					OALEffectf = nullptr;
-	DefAlEffectfv					OALEffectfv = nullptr;
+	DefAlEffecti					OALEffecti;
+	DefAlEffectiv					OALEffectiv;
+	DefAlEffectf					OALEffectf;
+	DefAlEffectfv					OALEffectfv;
 
-	DefAlGenFilters					OALGenFilters = nullptr;
-	DefAlDeleteFilters				OALDeleteFilters = nullptr;
-	DefAlFilteri					OALFilteri = nullptr;
-	DefAlFilteriv					OALFilteriv = nullptr;
-	DefAlFilterf					OALFilterf = nullptr;
-	DefAlFilterfv					OALFilterfv = nullptr;
+	DefAlGenFilters					OALGenFilters;
+	DefAlDeleteFilters				OALDeleteFilters;
+	DefAlFilteri					OALFilteri;
+	DefAlFilteriv					OALFilteriv;
+	DefAlFilterf					OALFilterf;
+	DefAlFilterfv					OALFilterfv;
 
-	DefAlDopplerFactor				OALDopplerFactor = nullptr;
-	DefAlDopplerVelocity			OALDopplerVelocity = nullptr;
+	DefAlDopplerFactor				OALDopplerFactor;
+	DefAlDopplerVelocity			OALDopplerVelocity;
 
-	DefAlDistanceModel				OALDistanceModel = nullptr;
+	DefAlDistanceModel				OALDistanceModel;
 
 	//////////////////////////////////////////////////////////////////////////
 	static OpenALSoft				PointerOALSoft;
@@ -415,7 +349,7 @@ private:
 	/** Set up current audio context and audio device */
 	void							SetAudioDeviceAndCurrentContext();
 	/** Helper boolean */
-	bool							bCanPlayAudio = false;
+	bool							bCanPlayAudio;
 	/** OpenAL Soft audio device */
 	ALCdevice*						AudioDevice;
 	/** OpenAL Soft audio context */
@@ -435,7 +369,7 @@ private:
 	/** Helper FVector while creating new audio source */
 	FVector							TemporaryAudioSourcePosition;
 	/** Helper variable while setting new audio source */
-	float							TemporaryAudioGain = 0.0f;
+	float							TemporaryAudioGain;
 	/** Array containing pool of OpenAL Soft audio source */
 	TArray< ALuint >				AudioSourcesPool;
 	/** Function creating bandpass filter pool - size depends of maximum available audio channels */
@@ -488,7 +422,7 @@ private:
 	/** TMap containing EAX effect filters. Key is EAX enum, value is OpenAL Soft EAX effect filter */
 	TMap< EEAX, ALuint >			EAXFilters;
 	/** EAX slot capacity is very important to not overload memory/cpu usage. Recommended and reasonable amount is 4 */
-	uint8							EAXSlotsCapacity = 4;
+	uint8							EAXSlotsCapacity;
 	/** 
 	Helper function for loading data of given audio asset.
 	@param AudioAsset - Unreal audio asset
@@ -502,12 +436,12 @@ private:
 	*/
 	bool							CatchError( const FString ActionName = "" );
 	/** Helper value for global control of audio gain multiplier */
-	float							VolumeMultiplier = 1.0f;
+	float							VolumeMultiplier;
 	/** Helper value for doppler factor when/if should be used */
-	float							DopplerFactor = 5.0f;
+	float							DopplerFactor;
 	/** Weak pointer to data loader class */
 	UPROPERTY()
-	TWeakObjectPtr<class URookAudioDataLoader>		DataLoader = nullptr;	
+	TWeakObjectPtr<class URookAudioDataLoader>		DataLoader;	
 	/**
 	Function internaly creates list of aviable audio devices. By default it will choose device which has highest 
 	amount of audio channels, opens it and returns. 

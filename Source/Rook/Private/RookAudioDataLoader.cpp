@@ -12,21 +12,20 @@ bool URookAudioDataLoader::IsTickable() const
 
 TStatId URookAudioDataLoader::GetStatId() const
 {
-	return this->GetStatID();
+	return GetStatID();
 }
 
 void URookAudioDataLoader::Tick(float DeltaTime)
 {
-	if (LoadingGraph.Num() != 0)
+	if (LoadingGraph.Num() == 0) { return; }
+	
+	if (LoadingGraph[0] != nullptr)
 	{
-		if (LoadingGraph[0] != nullptr)
-		{
-			if (LoadingGraph[0]->IsComplete()) 
-				LoadingGraph.RemoveAt(0);			
-		}
-		else 
-		{
-			LoadingGraph.RemoveAt(0);
-		}
+		if (LoadingGraph[0]->IsComplete()) 
+			LoadingGraph.RemoveAt(0);			
 	}
+	else 
+	{
+		LoadingGraph.RemoveAt(0);
+	}	
 }

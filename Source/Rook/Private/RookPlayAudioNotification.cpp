@@ -13,8 +13,7 @@ URookPlayAudioNotification::URookPlayAudioNotification()
 
 void URookPlayAudioNotification::Notify(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)
 {
-	if (AudioBlueprint)
-		URookAudioControllerBPL::Play(AudioBlueprint, MeshComp->GetOwner());
+	if (AudioBlueprint) { URookAudioControllerBPL::Play(AudioBlueprint, MeshComp->GetOwner()); }		
 }
 
 FString URookPlayAudioNotification::GetNotifyName_Implementation() const

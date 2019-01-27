@@ -43,35 +43,35 @@ public:
 public:
 	/** Sets an Actor which Listener Controller will follow */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Listener" )
-	TWeakObjectPtr<class AActor>					ActorToFollow = nullptr;
+	TWeakObjectPtr<class AActor>					ActorToFollow;
 	/** Sets a Camera which Listener Controller will follow */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Listener" )
-	TWeakObjectPtr<class APlayerCameraManager>		CameraToFollow = nullptr;
+	TWeakObjectPtr<class APlayerCameraManager>		CameraToFollow;
 	/** Sets a Socket which Listener Controller will attach to. To have proper attachment not only socket has to be provident, but also character which has it. */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Listener" )
 	FSocketAttachment								SocketAttachment;
 	/** Should Listener Controller have frozen rotation. If so it will use FFreezRotation struct */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Listener" )
-	bool											bFreezRotation = false;
+	bool											bFreezRotation;
 	/** Struct for frozen rotation. It can freeze separate axies (X, Y, Z) with given rotation FVector */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Listener" )
 	FFreezRotation									FreezRotation;
 	/** Should Listener Controller sends its velocity. It affects output of the audio */
 	UPROPERTY( EditAnywhere, BlueprintReadOnly, Category = "Rook Listener" )
-	bool											bUseVelocity = false;
+	bool											bUseVelocity;
 private:
 	/** Helper boolean. If controller is not active it will not tick */
-	bool							IsTicking = true;
+	bool							IsTicking;
 	/** Listener type. As a default it is following camera, however it can by set to follow actor or specific socket on mesh */
-	EListenerType					ListenerType = EListenerType::FollowCamera;
+	EListenerType					ListenerType;
 	/** Helper actor. If listener controller is set to attach to socket we are creating temporary actor, add it to socket and get its position and rotation */
-	TWeakObjectPtr<class AActor>	SocketActor = nullptr;
+	TWeakObjectPtr<class AActor>	SocketActor;
 	/** Helper boolean. Set to true when Listener Controller is registerd in Rook */
-	bool							bWasRegistered = false;
+	bool							bWasRegistered;
 	/** Shared Pointer to Rook interface - used to register Listener Controller */
-	class IRook*					RookInterface = nullptr;
+	class IRook*					RookInterface;
 	/** Helper boolean. Checks if EndPlay deleagate has been added */
-	bool							bHasEndPlayDeleagate = false;
+	bool							bHasEndPlayDeleagate;
 private:
 	/** Function will check if there is actor, camera or socket set and if so it will change ListenerType */
 	void							CheckInitListenerType();

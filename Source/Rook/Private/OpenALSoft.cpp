@@ -9,6 +9,69 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "OpenALSoft.h"
 
 OpenALSoft::OpenALSoft()
+	: bHasDeviceBeenSet(false)
+	, CurrentLiveSourceCount(0)
+	, MaximumAvailableAudioChannels(0)
+	, bHasReachPlayLimit(false)
+	, OALGenBuffers(nullptr)
+	, OALBufferData(nullptr)
+	, bWasDllLoaded(false)
+	, OALGetError(nullptr)
+	, OALEnable(nullptr)
+	, OALOpenDevice(nullptr)
+	, OALCloseDevice(nullptr)
+	, OALCreateContext(nullptr)
+	, OALDestroyContext(nullptr)
+	, OALMakeContextCurrent(nullptr)
+	, OALDeleteBuffers(nullptr)
+	, OALListener3f(nullptr)
+	, OALListenerfv(nullptr)
+	, OALGenSources(nullptr)
+	, OALDeleteSoruces(nullptr)
+	, OALSource3f(nullptr)
+	, OALSourcef(nullptr)
+	, OALSourcei(nullptr)
+	, OALSourceiv(nullptr)
+	, OALSource3i(nullptr)
+	, OALSourcePlay(nullptr)
+	, OALSourceStop(nullptr)
+	, OALSourcePause(nullptr)
+	, OALIsSource(nullptr)
+	, OALIsExtensionPresent(nullptr)
+	, OALIsAlcExtensionPresent(nullptr)
+	, OALGetString(nullptr)
+	, OALGetIntegerv(nullptr)
+	, OALGetSourcei(nullptr)
+	, OALGetSourcef(nullptr)
+	, OALGetEnumValue(nullptr)
+	, OALEnableHrtf(nullptr)
+	, OALGenEffects(nullptr)
+	, OALDeleteEffects(nullptr)
+	, OALIsEffect(nullptr)
+	, OALGenAuxiliaryEffectSlot(nullptr)
+	, OALDeleteAuxiliaryEffectSlot(nullptr)
+	, OALIsAuxiliaryEffectSlot(nullptr)
+	, OALAuxiliaryEffectSloti(nullptr)
+	, OALEffecti(nullptr)
+	, OALEffectiv(nullptr)
+	, OALEffectf(nullptr)
+	, OALEffectfv(nullptr)
+	, OALGenFilters(nullptr)
+	, OALDeleteFilters(nullptr)
+	, OALFilteri(nullptr)
+	, OALFilteriv(nullptr)
+	, OALFilterf(nullptr)
+	, OALFilterfv(nullptr)
+	, OALDopplerFactor(nullptr)
+	, OALDopplerVelocity(nullptr)
+	, OALDistanceModel(nullptr)
+	, bCanPlayAudio(false)
+	, TemporaryAudioSourcePosition(FVector::ZeroVector)
+	, TemporaryAudioGain(0.0f)
+	, EAXSlotsCapacity(4)
+	, VolumeMultiplier(1.0f)
+	, DopplerFactor(5.0f)
+	, DataLoader(nullptr)
 {
 	ProcessDLL();
 
@@ -56,17 +119,76 @@ void OpenALSoft::ProcessDLL()
 #if WITH_EDITOR
 	bUseEnginePath = FPaths::FileExists(DLLPath);
 #endif
-	if (bUseEnginePath) 
-	{
-		OALDLLHandler = FPlatformProcess::GetDllHandle(*DLLPath);
-	}
-	else 
-	{
-		OALDLLHandler = FPlatformProcess::GetDllHandle(*BackUpDLLPath);
-	}
-
+	
+	OALDLLHandler = bUseEnginePath ? FPlatformProcess::GetDllHandle(*DLLPath) : FPlatformProcess::GetDllHandle(*BackUpDLLPath);
+	
 	if (OALDLLHandler) 
 	{
+		static const FString ErrorName = "alGetError";
+		static const FString EnableName = "alEnable";
+
+		static const FString OpenDeviceName = "alcOpenDevice";
+		static const FString CloseDeviceName = "alcCloseDevice";
+		static const FString CreateContextName = "alcCreateContext";
+		static const FString DestroyContextName = "alcDestroyContext";
+		static const FString MakeContextCurrentName = "alcMakeContextCurrent";
+
+		static const FString GenBuffersName = "alGenBuffers";
+		static const FString DeleteBuffersName = "alDeleteBuffers";
+		static const FString BufferName = "alBufferData";
+
+		static const FString Listener3fName = "alListener3f";
+		static const FString ListenerfvName = "alListenerfv";
+
+		static const FString GenSourcesName = "alGenSources";
+		static const FString DeleteSourcesName = "alDeleteSources";
+		static const FString Soruce3fName = "alSource3f";
+		static const FString SorucefName = "alSourcef";
+		static const FString SoruceivName = "alSourceiv";
+		static const FString SoruceiName = "alSourcei";
+		static const FString Soruce3iName = "alSource3i";
+		static const FString SorucePlayName = "alSourcePlay";
+		static const FString SoruceStopName = "alSourceStop";
+		static const FString SorucePauseName = "alSourcePause";
+		static const FString IsSourceName = "alIsSource";
+
+		static const FString IsExtensionPresentName = "alIsExtensionPresent";
+		static const FString IsAlcExtensionPresentName = "alcIsExtensionPresent";
+
+		static const FString GetStringName = "alcGetString";
+		static const FString GetIntegervName = "alcGetIntegerv";
+		static const FString GetSourceiName = "alGetSourcei";
+		static const FString GetSourcefName = "alGetSourcef";
+		static const FString GetEnumValueName = "alGetEnumValue";
+
+		static const FString HrtfName = "alcDeviceEnableHrtf";
+
+		static const FString GenEffectName = "alGenEffects";
+		static const FString DeleteEffectName = "alDeleteEffects";
+		static const FString IsEffectName = "alIsEffect";
+		static const FString AlGenAuxiliaryEffectSlotsName = "alGenAuxiliaryEffectSlots";
+		static const FString DeleteAuxiliaryEffectSlotsName = "alDeleteAuxiliaryEffectSlots";
+		static const FString IsAuxiliaryEffectSlotName = "alIsAuxiliaryEffectSlot";
+		static const FString AuxiliaryEffectSlotiName = "alAuxiliaryEffectSloti";
+
+		static const FString EffectiName = "alEffecti";
+		static const FString EffectivName = "alEffectiv";
+		static const FString EffectfName = "alEffectf";
+		static const FString EffectfvName = "alEffectfv";
+
+		static const FString GenFiltersName = "alGenFilters";
+		static const FString DeleteFiltersName = "alDeleteFilters";
+		static const FString FilteriName = "alFilteri";
+		static const FString FilterivName = "alFilteriv";
+		static const FString FilterfName = "alFilterf";
+		static const FString FilterfvName = "alFilterfv";
+
+		static const FString DopplerFactorName = "alDopplerFactor";
+		static const FString DopplerVelocityName = "alDopplerVelocity";
+
+		static const FString DistanceModelName = "alDistanceModel";
+		static const FString SoruceDistanceModelName = "alSourceDistanceModel";
+
 		OALGetError = (DefAlGetError)FPlatformProcess::GetDllExport(OALDLLHandler, *ErrorName);
 		OALEnable = (DefAlEnable)FPlatformProcess::GetDllExport(OALDLLHandler, *EnableName);
 
@@ -155,8 +277,7 @@ bool OpenALSoft::Play(const FAudioSourceModel SourceData)
 {
 	if (AudioSourcesPool.Num() > 0) 
 	{
-		if (bHasReachPlayLimit) 
-			bHasReachPlayLimit = false;		
+		if (bHasReachPlayLimit) { bHasReachPlayLimit = false; }				
 	}
 	else 
 	{
@@ -176,11 +297,9 @@ bool OpenALSoft::Play(const FAudioSourceModel SourceData)
 		TemporaryAudioAssetUID = SourceData.CurrentAudioSourceAsset->GetUniqueID();
 		bHasBufferData = Buffers.Contains(TemporaryAudioAssetUID);
 
-		if (bHasBufferData) 
-			bShouldPlay = Buffers[TemporaryAudioAssetUID] != 0;
+		if (bHasBufferData) { bShouldPlay = Buffers[TemporaryAudioAssetUID] != 0; }			
 		
-		if (bShouldPlay) 
-			TemporaryBuffer = Buffers[TemporaryAudioAssetUID];		
+		if (bShouldPlay) { TemporaryBuffer = Buffers[TemporaryAudioAssetUID]; }				
 	}
 
 	if (bHasBufferData) 
@@ -193,14 +312,7 @@ bool OpenALSoft::Play(const FAudioSourceModel SourceData)
 			TemporaryAudioSourcePosition = SourceData.AudioSourceLocation;
 			TemporaryAudioGain = SourceData.AudioSourceGain;
 
-			if (TemporaryAudioGain < 0.0f) 
-			{
-				TemporaryAudioGain = 0.0f;
-			}
-			else if (TemporaryAudioGain < 0.005f) 
-			{
-				TemporaryAudioGain = 0.005f;
-			}
+			TemporaryAudioGain = TemporaryAudioGain < 0.005f ? 0.005f : TemporaryAudioGain;
 
 			SetAudioSourceData();
 
@@ -212,14 +324,12 @@ bool OpenALSoft::Play(const FAudioSourceModel SourceData)
 			{
 				AudioSourceGain.Add(SourceData.AudioSourceID, TemporaryAudioGain);
 
-				if (!AudioSources.Contains(SourceData.AudioSourceID)) 
-					AudioSources.Add(SourceData.AudioSourceID, TemporaryAudioSource);
-				
+				if (!AudioSources.Contains(SourceData.AudioSourceID)) { AudioSources.Add(SourceData.AudioSourceID, TemporaryAudioSource); }
+								
 				OALSourcei(TemporaryAudioSource, AL_LOOPING, AL_FALSE);
 				
-				if (SourceData.bUseRandomPitch) 
-					OALSourcef(TemporaryAudioSource, AL_PITCH, SourceData.AudioSourceRandomPitch);
-				
+				if (SourceData.bUseRandomPitch) { OALSourcef(TemporaryAudioSource, AL_PITCH, SourceData.AudioSourceRandomPitch); }
+								
 				if (SourceData.AudioSourceEAX != EEAX::None) 
 				{
 					if (SourceData.AudioSourceEAXGain > 0.0f) 
@@ -265,8 +375,7 @@ bool OpenALSoft::Play(const FAudioSourceModel SourceData)
 		LoadAudioAsset(SourceData.CurrentAudioSourceAsset, true);
 	}
 
-	if (CatchError())	
-		bHasAudioSourcePlayed = false;
+	if (CatchError()) { bHasAudioSourcePlayed = false; }		
 	
 	return bHasAudioSourcePlayed;
 }
@@ -283,20 +392,20 @@ void OpenALSoft::PlayAt(const uint32 AudioSourceUID, const float Seconds)
 
 void OpenALSoft::PlayAfterPause(const uint32 AudioSourceUID) 
 {
-	if (AudioSources.Contains(AudioSourceUID) && OALIsSource(AudioSources[AudioSourceUID])) 	
-		OALSourcePlay(AudioSources[AudioSourceUID]);	
+	if (AudioSources.Contains(AudioSourceUID) && OALIsSource(AudioSources[AudioSourceUID]))
+	{
+		OALSourcePlay(AudioSources[AudioSourceUID]);
+	}			
 }
 
 void OpenALSoft::Stop(const uint32 AudioSourceUID) 
 {
-	if (bWasDllLoaded && AudioSources.Contains(AudioSourceUID)) 
-		OALSourceStop(AudioSources[AudioSourceUID]);	
+	if (bWasDllLoaded && AudioSources.Contains(AudioSourceUID)) { OALSourceStop(AudioSources[AudioSourceUID]); }			
 }
 
 void OpenALSoft::Pause(const uint32 AudioSourceUID) 
 {
-	if (bWasDllLoaded && AudioSources.Contains(AudioSourceUID) && bCanPlayAudio) 
-		OALSourcePause(AudioSources[AudioSourceUID]);	
+	if (bWasDllLoaded && AudioSources.Contains(AudioSourceUID) && bCanPlayAudio) { OALSourcePause(AudioSources[AudioSourceUID]); }		
 }
 
 void OpenALSoft::ChangeAudioSourceGain(const uint32 AudioSourceUID, float Gain) 
@@ -307,11 +416,9 @@ void OpenALSoft::ChangeAudioSourceGain(const uint32 AudioSourceUID, float Gain)
 
 		if (bProceed) 
 		{
+			Gain = Gain < 0.001f ? 0.001f : Gain;
 			AudioSourceGain[AudioSourceUID] = Gain;
-
-			if (Gain < 0.001f)
-				Gain = 0.001f;
-
+			
 			OALSourcef(AudioSources[AudioSourceUID], AL_GAIN, (Gain)*VolumeMultiplier);
 		}
 	}
@@ -321,8 +428,7 @@ float OpenALSoft::GetAudioSourceGain(const uint32 AudioSourceUID)
 {
 	ALfloat TemporaryGain = 0.0f;
 	
-	if (AudioSources.Contains(AudioSourceUID)) 
-		OALGetSourcef(AudioSources[AudioSourceUID], AL_GAIN, &TemporaryGain);
+	if (AudioSources.Contains(AudioSourceUID)) { OALGetSourcef(AudioSources[AudioSourceUID], AL_GAIN, &TemporaryGain); }		
 	
 	return TemporaryGain;
 }
@@ -336,8 +442,7 @@ bool OpenALSoft::RemoveAudioSource(const uint32 AudioSourceUID)
 			ALint PlayingState;
 			OALGetSourcei(AudioSources[AudioSourceUID], AL_SOURCE_STATE, &PlayingState);
 
-			if (PlayingState == AL_PLAYING) 
-				OALSourceStop(AudioSources[AudioSourceUID]);
+			if (PlayingState == AL_PLAYING) { OALSourceStop(AudioSources[AudioSourceUID]); }				
 			
 			OALSourcei(AudioSources[AudioSourceUID], AL_BUFFER, 0);
 		}
@@ -367,16 +472,14 @@ bool OpenALSoft::RemoveAudioSource(const uint32 AudioSourceUID)
 		return false;
 	}
 
-	if (bHasReachPlayLimit && AudioSourcesPool.Num() > 0)		
-		bHasReachPlayLimit = false;		
+	if (bHasReachPlayLimit && AudioSourcesPool.Num() > 0) { bHasReachPlayLimit = false; }			
 	
 	return true;
 }
 
 bool OpenALSoft::IsAnAudioSource(const uint32 AudioSourceUID) 
 {
-	if (AudioSources.Num() > 0) 
-		return AudioSources.Contains(AudioSourceUID);
+	if (AudioSources.Num() > 0) { return AudioSources.Contains(AudioSourceUID); }		
 	
 	return false;
 }
@@ -388,8 +491,7 @@ bool OpenALSoft::IsAudioSourcePlaying(const uint32 AudioSourceUID)
 		ALint PlayingState;
 		OALGetSourcei(AudioSources[AudioSourceUID], AL_SOURCE_STATE, &PlayingState);
 
-		if (PlayingState == AL_PLAYING) 
-			return true;		
+		if (PlayingState == AL_PLAYING) { return true; }					
 	}
 	return false;
 }
@@ -419,23 +521,21 @@ EAudioState OpenALSoft::AudioSourceState(const uint32 AudioSourceUID)
 
 void OpenALSoft::SetLooping(const uint32 AudioSourceUID, const bool bShouldLoop) 
 {
-	if (AudioSources.Contains(AudioSourceUID)) 
+	if (AudioSources.Contains(AudioSourceUID) == false) { return; }
+	
+	if (bShouldLoop) 
 	{
-		if (bShouldLoop) 
-		{
-			OALSourcei(AudioSources[AudioSourceUID], AL_LOOPING, AL_TRUE);
-		}
-		else 
-		{
-			OALSourcei(AudioSources[AudioSourceUID], AL_LOOPING, AL_FALSE);
-		}
+		OALSourcei(AudioSources[AudioSourceUID], AL_LOOPING, AL_TRUE);
 	}
+	else 
+	{
+		OALSourcei(AudioSources[AudioSourceUID], AL_LOOPING, AL_FALSE);
+	}	
 }
 
 void OpenALSoft::ChangeAudioSourcePitch(const uint32 AudioSourceUID, const float Pitch) 
 {
-	if (AudioSources.Contains(AudioSourceUID)) 
-		OALSourcef(AudioSources[AudioSourceUID], AL_PITCH, Pitch);	
+	if (AudioSources.Contains(AudioSourceUID)) { OALSourcef(AudioSources[AudioSourceUID], AL_PITCH, Pitch); }		
 }
 
 void OpenALSoft::UpdateAudioSourcePosition(const uint32 AudioSourceUID, const FVector AudioSourcePosition)
@@ -449,8 +549,7 @@ void OpenALSoft::UpdateAudioSourcePosition(const uint32 AudioSourceUID, const FV
 
 void OpenALSoft::UpdateAudioSourceVelocity(const uint32 AudioSourceUID, const FVector Velocity) 
 {
-	if (AudioSources.Contains(AudioSourceUID)) 
-		OALSource3f(AudioSources[AudioSourceUID], AL_VELOCITY, Velocity.X, Velocity.Y, Velocity.Z);	
+	if (AudioSources.Contains(AudioSourceUID)) { OALSource3f(AudioSources[AudioSourceUID], AL_VELOCITY, Velocity.X, Velocity.Y, Velocity.Z); }
 }
 
 void OpenALSoft::ChangeDopplerFactor(const float DopplerFactor) 
@@ -467,8 +566,7 @@ float OpenALSoft::CurrentPositionOnAudioTrack(const uint32 AudioSourceUID)
 		ALint PlayingState;
 		OALGetSourcei(AudioSources[AudioSourceUID], AL_SOURCE_STATE, &PlayingState);
 
-		if (PlayingState == AL_PLAYING) 
-			OALGetSourcef(AudioSources[AudioSourceUID], AL_SEC_OFFSET, &CurrentTime);		
+		if (PlayingState == AL_PLAYING) { OALGetSourcef(AudioSources[AudioSourceUID], AL_SEC_OFFSET, &CurrentTime); }				
 	}
 	return CurrentTime;
 }
@@ -496,8 +594,7 @@ void OpenALSoft::UpdateAudioListenerePosition(const FVector ListenerPosition, co
 
 void OpenALSoft::UpdateAudioListenerVelocity(const FVector Velocity) 
 {
-	if (bWasDllLoaded) 
-		OALListener3f(AL_VELOCITY, Velocity.X, Velocity.Z, Velocity.Y);	
+	if (bWasDllLoaded) { OALListener3f(AL_VELOCITY, Velocity.X, Velocity.Z, Velocity.Y); }		
 }
 
 void OpenALSoft::SetAudioSourceData() 
@@ -557,8 +654,7 @@ void OpenALSoft::ChangeBandpassFilter(const uint32 AudioSourceUID, const float H
 {
 	if (bWasDllLoaded && AudioSources.Contains(AudioSourceUID)) 
 	{
-		if (!BandpassFilters.Contains(AudioSourceUID)) 
-			SetBandpassFilterForAudioSource(AudioSourceUID);
+		if (!BandpassFilters.Contains(AudioSourceUID)) { SetBandpassFilterForAudioSource(AudioSourceUID); }			
 
 		OALFilterf(BandpassFilters[AudioSourceUID], AL_BANDPASS_GAINHF, HFGain);
 		OALFilterf(BandpassFilters[AudioSourceUID], AL_BANDPASS_GAINLF, LFGain);
@@ -568,8 +664,7 @@ void OpenALSoft::ChangeBandpassFilter(const uint32 AudioSourceUID, const float H
 
 void OpenALSoft::SetBandpassFilterForAudioSource(const uint32 AudioSourceUID)
 {
-	if (BandpassPool.Num() == 0)
-		return;
+	if (BandpassPool.Num() == 0) { return; }		
 
 	ALuint TemporaryBandpassFilter;
 	
@@ -594,8 +689,7 @@ void OpenALSoft::ChangeLowpassFilter(const uint32 AudioSourceUID, const float Ga
 {
 	if (bWasDllLoaded && AudioSources.Contains(AudioSourceUID)) 
 	{
-		if (!LowpassFilters.Contains(AudioSourceUID)) 
-			SetLowpassFilterForAudioSource(AudioSourceUID);
+		if (!LowpassFilters.Contains(AudioSourceUID)) { SetLowpassFilterForAudioSource(AudioSourceUID); }			
 		
 		OALFilterf(LowpassFilters[AudioSourceUID], AL_LOWPASS_GAIN, Gain);
 		OALFilterf(LowpassFilters[AudioSourceUID], AL_LOWPASS_GAINHF, HFGain);
@@ -605,8 +699,7 @@ void OpenALSoft::ChangeLowpassFilter(const uint32 AudioSourceUID, const float Ga
 
 void OpenALSoft::SetLowpassFilterForAudioSource(const uint32 AudioSourceUID) 
 {
-	if (LowpassPool.Num() == 0)
-		return;
+	if (LowpassPool.Num() == 0) { return; }		
 
 	ALuint TemporaryLowpassFilter;
 	
@@ -840,16 +933,15 @@ void OpenALSoft::SetEFXEAXReverb(EFXEAXREVERBPROPERTIES* EAXReverb, ALuint UIDEf
 
 void OpenALSoft::UpdateEAXReverbGain() 
 {
-	for (TPair< uint32, EEAX >& Kvp : AudioSourceEAX) 
+	for (TPair< uint32, EEAX >& EAX : AudioSourceEAX) 
 	{
 		float ReverbGain = 0.0f;
 		
-		if (AudioSources.Contains(Kvp.Key)) 
-			ReverbGain = AudioSources[Kvp.Key];
+		if (AudioSources.Contains(EAX.Key)) { ReverbGain = AudioSources[EAX.Key]; }			
 		
-		SetEFXEAXReverb(&RookUtils::Instance().EAXReverb[Kvp.Value], EAXEffects[Kvp.Value], AudioSourceEAXCustomGain[Kvp.Key], ReverbGain);
-		OALAuxiliaryEffectSloti(EAXEffectSlots[Kvp.Value], AL_EFFECTSLOT_EFFECT, EAXEffects[Kvp.Value]);
-		OALSource3i(AudioSources[Kvp.Key], AL_AUXILIARY_SEND_FILTER, EAXEffectSlots[Kvp.Value], 0, EAXFilters[Kvp.Value]);
+		SetEFXEAXReverb(&RookUtils::Instance().EAXReverb[EAX.Value], EAXEffects[EAX.Value], AudioSourceEAXCustomGain[EAX.Key], ReverbGain);
+		OALAuxiliaryEffectSloti(EAXEffectSlots[EAX.Value], AL_EFFECTSLOT_EFFECT, EAXEffects[EAX.Value]);
+		OALSource3i(AudioSources[EAX.Key], AL_AUXILIARY_SEND_FILTER, EAXEffectSlots[EAX.Value], 0, EAXFilters[EAX.Value]);
 	}
 }
 
@@ -868,23 +960,23 @@ void OpenALSoft::SetVolumeMulitiplier(const float NewVolMultiplier)
 	{
 		VolumeMultiplier = NewVolMultiplier;
 		
-		for (auto itr = AudioSourceGain.CreateIterator(); itr; ++itr) 
-			ChangeAudioSourceGain(itr.Key(), itr.Value());		
+		for (auto GainIterator = AudioSourceGain.CreateIterator(); GainIterator; ++GainIterator)
+		{
+			ChangeAudioSourceGain(GainIterator.Key(), GainIterator.Value());
+		}				
 	}
 }
 
 bool OpenALSoft::HadError(const uint32 AudioSourceUID) const 
 {
-	if (SourceError.Contains(AudioSourceUID)) 
-		return SourceError[AudioSourceUID];
+	if (SourceError.Contains(AudioSourceUID)) { return SourceError[AudioSourceUID]; }		
 	
 	return false;
 }
 
 void OpenALSoft::CleanErrorEntry(const uint32 AudioSourceUID) 
 {
-	if (SourceError.Contains(AudioSourceUID)) 
-		SourceError.Remove(AudioSourceUID);	
+	if (SourceError.Contains(AudioSourceUID)) { SourceError.Remove(AudioSourceUID); }		
 }
 
 uint16 OpenALSoft::GetNumberOfAvailableAudioSourcesInPool() const
@@ -894,15 +986,16 @@ uint16 OpenALSoft::GetNumberOfAvailableAudioSourcesInPool() const
 
 void OpenALSoft::LoadAudioAsset(const TWeakObjectPtr<class USoundWave> AudioAsset, const bool bAddToMap) 
 {
-	if (!AudioAsset.IsValid())
-		return;
+	if (!AudioAsset.IsValid()) { return; }		
 	
 	if (DataLoader == nullptr)
 	{
-		URookAudioDataLoader* TemporaryDataLoader = nullptr;
+		URookAudioDataLoader* TemporaryDataLoader(nullptr);
 		
-		for (TObjectIterator<URookAudioDataLoader> Itr; Itr; ++Itr) 
+		for (TObjectIterator<URookAudioDataLoader> Itr; Itr; ++Itr)
+		{
 			TemporaryDataLoader = Cast<URookAudioDataLoader>(*Itr);
+		}			
 		
 		if (TemporaryDataLoader == nullptr) 
 		{
@@ -914,12 +1007,11 @@ void OpenALSoft::LoadAudioAsset(const TWeakObjectPtr<class USoundWave> AudioAsse
 		}
 	}
 
-	if (bAddToMap) 
-		Buffers.Add(AudioAsset->GetUniqueID(), 0);
+	if (bAddToMap) { Buffers.Add(AudioAsset->GetUniqueID(), 0); }		
 	
 	if (DataLoader.IsValid())
 	{
-		TWeakObjectPtr<USoundWave> AssetToLoad = AudioAsset;
+		TWeakObjectPtr<USoundWave> AssetToLoad(AudioAsset);
 		TArray<TWeakObjectPtr<USoundWave>> TempDataToLoad;
 		TempDataToLoad.Add(AssetToLoad);
 		
@@ -997,8 +1089,8 @@ void OpenALSoft::SetAudioDeviceAndCurrentContext()
 
 ALCdevice* OpenALSoft::GetBestAudioDevice()
 {
-	const ALCchar* TemporaryDeviceName = OALGetString(NULL, ALC_DEVICE_SPECIFIER);
-	const ALCchar* TemporaryNextDeviceName = TemporaryDeviceName + 1;
+	const ALCchar* TemporaryDeviceName(OALGetString(NULL, ALC_DEVICE_SPECIFIER));
+	const ALCchar* TemporaryNextDeviceName(TemporaryDeviceName + 1);
 	uint16 TemporaryNameSize = 0;
 	TMap< uint16, ALCdevice* > TemporaryDeviceMap;
 	ALCdevice* TempoaryAudioDevice;
@@ -1022,8 +1114,7 @@ ALCdevice* OpenALSoft::GetBestAudioDevice()
 		{
 			if (!bNextAttribute) 
 			{
-				if (Attribute == ALC_MONO_SOURCES) 
-					bNextAttribute = true;
+				if (Attribute == ALC_MONO_SOURCES) { bNextAttribute = true; }					
 			}
 			else
 			{
@@ -1040,7 +1131,7 @@ ALCdevice* OpenALSoft::GetBestAudioDevice()
 
 	TempoaryAudioDevice = nullptr;
 
-	TemporaryDeviceMap.KeySort([](uint16 KeyA, uint16 KeyB) { return KeyA < KeyB;	});
+	TemporaryDeviceMap.KeySort([](uint16 KeyA, uint16 KeyB) { return KeyA < KeyB; });
 	TArray<uint16> MaximumChannelArray;
 	TArray<ALCdevice*> AudioDeviceArray;
 	TemporaryDeviceMap.GenerateKeyArray(MaximumChannelArray);
@@ -1051,8 +1142,10 @@ ALCdevice* OpenALSoft::GetBestAudioDevice()
 	{
 		if (AudioDeviceArray.Num() > 1) 
 		{
-			for (uint16 Index = 1; Index < AudioDeviceArray.Num(); ++Index) 
-				OALCloseDevice(AudioDeviceArray[Index]);			
+			for (int32 Index = 1; Index < AudioDeviceArray.Num(); ++Index) 
+			{
+				OALCloseDevice(AudioDeviceArray[Index]);
+			}						
 		}
 	}
 	else 
@@ -1069,53 +1162,55 @@ void OpenALSoft::CloseDeviceAndDestroyCurrentContext()
 {
 	if (Buffers.Num() > 0) 
 	{
-		for (TPair<uint32, ALuint>& Kvp : Buffers) 
-			OALDeleteBuffers((ALuint)1, &Kvp.Value);		
+		for (TPair<uint32, ALuint>& Buffer : Buffers)
+		{
+			OALDeleteBuffers((ALuint)1, &Buffer.Value);
+		}				
 	}
 
 	if (AudioSourcesPool.Num() > 0) 
 	{
-		for (uint16 Index = 0; Index < AudioSourcesPool.Num(); ++Index) 
+		for (int32 Index = 0; Index < AudioSourcesPool.Num(); ++Index) 
 		{
-			if (OALIsSource(AudioSourcesPool[Index])) 
-				OALDeleteSoruces((ALuint)1, &AudioSourcesPool[Index]);			
+			if (OALIsSource(AudioSourcesPool[Index])) { OALDeleteSoruces((ALuint)1, &AudioSourcesPool[Index]); }					
 		}
 	}
 
 	if (LowpassPool.Num() > 0) 
 	{
-		for (uint16 Index = 0; Index < LowpassPool.Num(); ++Index) 
-			OALDeleteFilters((ALuint)1, &LowpassPool[Index]);		
+		for (int32 Index = 0; Index < LowpassPool.Num(); ++Index)
+		{
+			OALDeleteFilters((ALuint)1, &LowpassPool[Index]);
+		}				
 	}
 
 	if (BandpassPool.Num() > 0) 
 	{
-		for (uint16 Index = 0; Index < BandpassPool.Num(); ++Index) 
-			OALDeleteFilters((ALuint)1, &BandpassPool[Index]);		
+		for (int32 Index = 0; Index < BandpassPool.Num(); ++Index)
+		{
+			OALDeleteFilters((ALuint)1, &BandpassPool[Index]);
+		}					
 	}
 
 	if (EAXEffectSlots.Num() > 0) 
 	{
-		for (TPair< EEAX, ALuint >& Kvp : EAXEffectSlots)
+		for (TPair< EEAX, ALuint >& EAXEffectSlot : EAXEffectSlots)
 		{
-			if (OALIsAuxiliaryEffectSlot(Kvp.Value)) 
-				OALDeleteAuxiliaryEffectSlot((ALuint)1, &Kvp.Value);			
+			if (OALIsAuxiliaryEffectSlot(EAXEffectSlot.Value)) { OALDeleteAuxiliaryEffectSlot((ALuint)1, &EAXEffectSlot.Value); }				
 		}
 	}
 
 	if (EAXEffects.Num() > 0) 
 	{
-		for (TPair< EEAX, ALuint >& Kvp : EAXEffects) 
+		for (TPair< EEAX, ALuint >& EAXEffect : EAXEffects)
 		{
-			if (OALIsEffect(Kvp.Value)) 
-				OALDeleteEffects((ALuint)1, &Kvp.Value);			
+			if (OALIsEffect(EAXEffect.Value)) { OALDeleteEffects((ALuint)1, &EAXEffect.Value); }				
 		}
 	}
 
 	if (EAXFilters.Num() > 0) 
 	{
-		for (TPair< EEAX, ALuint >& Kvp : EAXFilters) 
-			OALDeleteFilters((ALuint)1, &Kvp.Value);		
+		for (TPair< EEAX, ALuint >& EAXFilter : EAXFilters) { OALDeleteFilters((ALuint)1, &EAXFilter.Value); }			
 	}
 
 	MainReverb = nullptr;

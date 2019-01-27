@@ -104,10 +104,10 @@ private:
 	RookUtils& operator= ( const RookUtils& );
 private:
 	/** Holdes current Rook Uniqe ID */
-	uint32				CurrentUniqeID = 0;
+	uint32				CurrentUniqeID;
 	/** Holdes previouse Unreal EAX Reverb - helps to remove it in Unreal */
 	uint8				PreviouseUnrealReverb;
 	/** TWeakObjectPtr to Unreal Reverb Effect so we don't need to create it over and over */
 	UPROPERTY()	
-	TWeakObjectPtr<class UReverbEffect> UnrealReverb = nullptr;
+	TWeakObjectPtr<class UReverbEffect> UnrealReverb;
 };

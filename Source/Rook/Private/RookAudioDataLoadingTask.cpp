@@ -23,8 +23,7 @@ void RookAudioDataLoadingTask::DoTask(ENamedThreads::Type CurrentThread, const F
 
 void RookAudioDataLoadingTask::LoadData()
 {
-	if (!OpenALSoft::Instance().IsDLLLoaded())
-		return;
+	if (!OpenALSoft::Instance().IsDLLLoaded()) { return; }
 
 	if (AudioAssets.Num() > 0)
 	{
@@ -35,74 +34,81 @@ void RookAudioDataLoadingTask::LoadData()
 
 		for (TWeakObjectPtr<USoundWave> SoundWave : AudioAssets)
 		{
-			WaveID = SoundWave->GetUniqueID();
-			if (SoundWave->NumChannels == 1)
-			{
+			if (SoundWave->NumChannels > 1) { continue; }
+			WaveID = SoundWave->GetUniqueID();			
+			
 #if WITH_OGGVORBIS
-				FByteBulkData* Bulk = SoundWave->GetCompressedData(TEXT("OGG"));
-				if (Bulk)
+			FByteBulkData* Bulk(SoundWave->GetCompressedData(TEXT("OGG")));
+			if (Bulk)
+			{
+				if (Bulk->IsAvailableForUse())
 				{
-					if (Bulk->IsAvailableForUse())
-					{
-						SoundWave->ResourceSize = Bulk->GetBulkDataSize();
-						Bulk->GetCopy((void**)&SoundWave->ResourceData, true);
-					}
-					else
-					{
-#if WITH_EDITOR
-						UE_LOG(RookLog, Warning, TEXT("While loading Audio asset could not use bulk"));
-#endif
-					}
+					SoundWave->ResourceSize = Bulk->GetBulkDataSize();
+					Bulk->GetCopy((void**)&SoundWave->ResourceData, true);
 				}
 				else
 				{
 #if WITH_EDITOR
-					UE_LOG(RookLog, Warning, TEXT("While loading Audio asset there was no bulk"));
+					UE_LOG(RookLog, Warning, TEXT("While loading Audio asset could not use bulk"));
 #endif
 				}
-				Bulk = nullptr;
-#else
-				if (SoundWave->IsStreaming())
-					SoundWave->InitAudioResource(TEXT("OPUS"));
-
-				SoundWave->InitAudioResource(TEXT("ADPCM"));
-#endif				
-				ICompressedAudioInfo* AudioInfo;
-#if WITH_OGGVORBIS
-				AudioInfo = new FVorbisAudioInfo();
-#else
-				if (SoundWave->IsStreaming())
-					audioInfo = new FOpusAudioInfo();
-
-				audioInfo = new FADPCMAudioInfo();
-#endif
-				QualityInfo = { 0 };
-
-				if (SoundWave->ResourceData == nullptr)
-				{
-#if WITH_EDITOR
-					UE_LOG(RookLog, Warning, TEXT("While loading resource data was null for %s"), *SoundWave->GetName());
-#endif
-					return;
-				}
-
-				AudioInfo->ReadCompressedInfo(SoundWave->ResourceData, SoundWave->ResourceSize, &QualityInfo);
-
-				uint32 DataSize = SoundWave->RawPCMDataSize;
-
-				uint8* RawData = new uint8[DataSize];
-				AudioInfo->ReadCompressedData(RawData, false, SoundWave->RawPCMDataSize);
-				//TODO: make selection between MONO8 and MONO16
-				AudioFormat = AL_FORMAT_MONO16;
-				ALsizei AudioSampleRate = SoundWave->SampleRate;
-
-				OpenALSoft::Instance().OALGenBuffers((ALuint)1, &AudioBuffer);
-				OpenALSoft::Instance().OALBufferData(AudioBuffer, AudioFormat, (void*)RawData, DataSize, AudioSampleRate);
-				OpenALSoft::Instance().Buffers.Add(WaveID, AudioBuffer);
-
-				delete[] RawData;
-				delete AudioInfo;
 			}
+			else
+			{
+#if WITH_EDITOR
+				UE_LOG(RookLog, Warning, TEXT("While loading Audio asset there was no bulk"));
+#endif
+			}
+			Bulk = nullptr;
+#else
+			if (SoundWave->IsStreaming())
+			{
+				SoundWave->InitAudioResource(TEXT("OPUS"));
+			}
+			else
+			{
+				SoundWave->InitAudioResource(TEXT("ADPCM"));
+			}				
+#endif				
+			ICompressedAudioInfo* AudioInfo;
+#if WITH_OGGVORBIS
+			AudioInfo = new FVorbisAudioInfo();
+#else
+			if (SoundWave->IsStreaming())
+			{
+				AudioInfo = new FOpusAudioInfo();
+			}
+			else
+			{
+				AudioInfo = new FADPCMAudioInfo();
+			}				
+#endif
+			QualityInfo = { 0 };
+
+			if (SoundWave->ResourceData == nullptr)
+			{
+#if WITH_EDITOR
+				UE_LOG(RookLog, Warning, TEXT("While loading resource data was null for %s"), *SoundWave->GetName());
+#endif
+				return;
+			}
+
+			AudioInfo->ReadCompressedInfo(SoundWave->ResourceData, SoundWave->ResourceSize, &QualityInfo);
+
+			uint32 DataSize = SoundWave->RawPCMDataSize;
+
+			uint8* RawData(new uint8[DataSize]);
+			AudioInfo->ReadCompressedData(RawData, false, SoundWave->RawPCMDataSize);
+			//TODO: make selection between MONO8 and MONO16
+			AudioFormat = AL_FORMAT_MONO16;
+			ALsizei AudioSampleRate = (int32)SoundWave->GetSampleRateForCurrentPlatform();
+
+			OpenALSoft::Instance().OALGenBuffers((ALuint)1, &AudioBuffer);
+			OpenALSoft::Instance().OALBufferData(AudioBuffer, AudioFormat, (void*)RawData, DataSize, AudioSampleRate);
+			OpenALSoft::Instance().Buffers.Add(WaveID, AudioBuffer);
+
+			delete[] RawData;
+			delete AudioInfo;			
 		}
 	}
 }
