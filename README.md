@@ -63,4 +63,4 @@ BugFX version
 - Fixed listener orientation
 
 ## License
-GNU GPLv3
+MIT
