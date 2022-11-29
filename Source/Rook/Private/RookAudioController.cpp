@@ -2,11 +2,11 @@
 Rook Audio Plugin
 Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 **/
+#include "RookAudioController.h"
 #include "RookPrivatePCH.h"
 #include "Runtime/Engine/Classes/Sound/SoundWave.h"
 #include "Runtime/Engine/Classes/Curves/CurveFloat.h"
 #include "OpenALSoft.h"
-#include "RookAudioController.h"
 #include "RookListenerController.h"
 #include "RookUtils.h"
 #include "RookAudioDataLoader.h"

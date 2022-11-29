@@ -1,4 +1,3 @@
-#include "RookPrivatePCH.h"
 /***
 Rook Audio Plugin
 Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
@@ -6,6 +5,7 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "RookAudioControllerBPL.h"
 #include "RookAudioController.h"
 #include "RookEnums.h"
+#include "RookPrivatePCH.h"
 
 URookAudioController* URookAudioControllerBPL::Play(TSubclassOf<URookAudioController> AudioBlueprint, AActor* Parent, FName Tag)
 {

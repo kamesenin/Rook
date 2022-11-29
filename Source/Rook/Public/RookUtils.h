@@ -5,8 +5,8 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #pragma once
 #include "RookEnums.h"
 #include "Runtime/Engine/Classes/Engine/EngineTypes.h"
-#include "OpenALSoft/include/AL/efx-presets.h"
-#include "OpenALSoft/include/AL/efx-creative.h"
+#include "AL/efx-presets.h"
+#include "AL/efx-creative.h"
 
 class RookUtils
 {
@@ -98,7 +98,7 @@ private:
 	void				SetUpAcusticsMap();
 	/** Function removes previouse Reverb for Unreal Audio Components */
 	void				RemoveUnrealReverb();	
-	static RookUtils	Utils;
+	//static RookUtils	Utils;
 	RookUtils();
 	RookUtils( const RookUtils& );
 	RookUtils& operator= ( const RookUtils& );

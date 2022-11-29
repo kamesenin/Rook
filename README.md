@@ -23,6 +23,9 @@ In implementation order:
 - HDR
 
 ##ChangeLog
+0.0.12
+- Final update for Unreal 4.27.2
+
 0.0.11
 - Refactor codes base
 - Fixed small bugs

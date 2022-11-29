@@ -2,8 +2,8 @@
 Rook Audio Plugin
 Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 **/
-#include "RookPrivatePCH.h"
 #include "RookStopAudioNotification.h"
+#include "RookPrivatePCH.h"
 #include "RookAudioControllerBPL.h"
 
 URookStopAudioNotification::URookStopAudioNotification() 

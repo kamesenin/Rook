@@ -2,8 +2,8 @@
 Rook Audio Plugin
 Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 **/
-#include "RookPrivatePCH.h"
 #include "Rook.h"
+#include "RookPrivatePCH.h"
 #include "OpenALSoft.h"
 
 DEFINE_LOG_CATEGORY(RookLog)
