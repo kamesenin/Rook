@@ -11,12 +11,12 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include <string>
 #include "RookEnums.h"
 #include "RookStructs.h"
-#include "OpenALSoft/include/AL/al.h"
-#include "OpenALSoft/include/AL/alc.h"
-#include "OpenALSoft/include/AL/efx-creative.h"
-#include "OpenALSoft/include/AL/efx.h"
-#include "OpenALSoft/include/AL/alext.h"
-#include "OpenALSoft/include/AL/efx-presets.h"
+#include "AL/al.h"
+#include "AL/alc.h"
+#include "AL/efx-creative.h"
+#include "AL/efx.h"
+#include "AL/alext.h"
+#include "AL/efx-presets.h"
 
 using namespace std;
 
@@ -181,7 +181,7 @@ public:
 	Changes overall doppler effect
 	@param DopplerFactor - value which will be apply for doppler effect
 	*/
-	void						ChangeDopplerFactor( const float DopplerFactor );
+	void						ChangeDopplerFactor( const float InDopplerFactor );
 	/**
 	Helper function. Returns current position on audio track
 	@return current position on audio track
@@ -341,7 +341,7 @@ private:
 	DefAlDistanceModel				OALDistanceModel;
 
 	//////////////////////////////////////////////////////////////////////////
-	static OpenALSoft				PointerOALSoft;
+	//static OpenALSoft				PointerOALSoft;
 	OpenALSoft();
 	OpenALSoft( const OpenALSoft& );
 	OpenALSoft& operator= ( const OpenALSoft& );

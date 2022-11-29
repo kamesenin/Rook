@@ -2,8 +2,8 @@
 Rook Audio Plugin
 Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 **/
-#include "RookPrivatePCH.h"
 #include "RookListenerControllerBPL.h"
+#include "RookPrivatePCH.h"
 #include "RookListenerController.h"
 
 bool URookListenerControllerBPL::SetActiveListener(TSubclassOf<URookListenerController> ListenerBlueprint)

@@ -2,6 +2,7 @@
 Rook Audio Plugin
 Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 **/
+#include "RookListenerController.h"
 #include "RookPrivatePCH.h"
 #include "Runtime/Engine/Classes/GameFramework/Actor.h"
 #include "Runtime/Engine/Classes/Camera/PlayerCameraManager.h"
@@ -9,7 +10,6 @@ Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 #include "Runtime/Engine/Classes/Engine/SkeletalMeshSocket.h"
 #include "OpenALSoft.h"
 #include "RookUtils.h"
-#include "RookListenerController.h"
 
 URookListenerController::URookListenerController()
 	: ActorToFollow(nullptr)

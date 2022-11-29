@@ -2,8 +2,8 @@
 Rook Audio Plugin
 Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 **/
-#include "RookPrivatePCH.h"
 #include "RookAudioDataLoader.h"
+#include "RookPrivatePCH.h"
 
 bool URookAudioDataLoader::IsTickable() const
 {

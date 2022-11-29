@@ -2,11 +2,11 @@
 Rook Audio Plugin
 Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 **/
+#include "OpenALSoft.h"
 #include "RookPrivatePCH.h"
 #include "RookUtils.h"
 #include "RookAudioDataLoader.h"
 #include "RookAudioDataLoadingTask.h"
-#include "OpenALSoft.h"
 
 OpenALSoft::OpenALSoft()
 	: bHasDeviceBeenSet(false)
@@ -552,9 +552,9 @@ void OpenALSoft::UpdateAudioSourceVelocity(const uint32 AudioSourceUID, const FV
 	if (AudioSources.Contains(AudioSourceUID)) { OALSource3f(AudioSources[AudioSourceUID], AL_VELOCITY, Velocity.X, Velocity.Y, Velocity.Z); }
 }
 
-void OpenALSoft::ChangeDopplerFactor(const float DopplerFactor) 
+void OpenALSoft::ChangeDopplerFactor(const float InDopplerFactor) 
 {
-	OALDopplerFactor(DopplerFactor);
+	OALDopplerFactor(InDopplerFactor);
 }
 
 float OpenALSoft::CurrentPositionOnAudioTrack(const uint32 AudioSourceUID) 

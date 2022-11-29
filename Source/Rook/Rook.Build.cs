@@ -22,7 +22,8 @@ namespace UnrealBuildTool.Rules
                     "Engine",
                     "InputCore",
                     "Core",                    
-                    "CoreUObject"
+                    "CoreUObject",
+                    "PhysicsCore"
                 }
             );
 

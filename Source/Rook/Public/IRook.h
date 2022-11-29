@@ -3,7 +3,7 @@ Rook Audio Plugin
 Created by Tomasz 'kamesenin' Witczak - kamesenin@gmail.com
 **/
 #pragma once
-#include "ModuleManager.h"
+#include "Modules/ModuleManager.h"
 #include "RookEnums.h"
 #include "Runtime/Core/Public/Delegates/DelegateSignatureImpl.inl"
 
